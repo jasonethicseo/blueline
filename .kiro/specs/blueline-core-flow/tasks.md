@@ -20,20 +20,20 @@ Conventions for every task:
   - Add the MIT `LICENSE`.
   - _Requirements: 13.5_
 
-- [ ] 2. Core constants, fee, and time
-  - [ ] 2.1 Create `src/core/config.ts`
+- [x] 2. Core constants, fee, and time
+  - [x] 2.1 Create `src/core/config.ts`
     - `FEE_RATE`, `DURATIONS`, `PRESETS`, `ALIASES`, `DIAL_TEXT`, `TIMING`, `MAX_URL_LENGTH`, `MAX_PROMPT_LENGTH`, `MAX_HISTORY` as in the design.
     - _Requirements: 4.1, 4.3, 6.3, 10.10_
-  - [ ] 2.2 Implement `src/core/fee.ts`
+  - [x] 2.2 Implement `src/core/fee.ts`
     - `fee(elapsedSeconds, rate = FEE_RATE)` = `ceil(s / 60) × rate`, `fee(0) = 0`.
     - _Requirements: 6.3, 6.7_
-  - [ ] 2.3 Write property test for fee
+  - [x] 2.3 Write property test for fee
     - **Property 1: Fee formula and laws**
     - **Validates: Requirements 6.3, 6.4, 6.5, 6.6, 6.7**
-  - [ ] 2.4 Implement `src/core/time.ts`
+  - [x] 2.4 Implement `src/core/time.ts`
     - `elapsedSeconds`, `remainingSeconds` with clamping to `0..plannedSec` and `now < start → 0`; `formatMMSS`; `parseMMSS` returning `null` for malformed text.
     - _Requirements: 6.3, 6.11, 6.12, 6.13, 6.14_
-  - [ ] 2.5 Write property tests for time
+  - [x] 2.5 Write property tests for time
     - **Property 2: MM:SS format round trip**
     - **Property 3: Elapsed and remaining are clamped**
     - **Validates: Requirements 6.3, 6.11, 6.12, 6.13, 6.14, 6.15**
