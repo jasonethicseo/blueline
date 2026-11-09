@@ -200,5 +200,6 @@ Conventions for every task:
     - _Requirements: 4.1, 5.3, 6.2, 7.2, 12.1_
 
 - [ ] 10. README
+  - **Moved to the README task of the last spec (마지막 스펙의 README 태스크로 옮김). Not done in this spec.**
   - Update `README.md` (or write it, if core task 16 has not run yet): the new flow, the 150 s demo path with a short Purpose, what is stored (Purpose and Outcome in history; Message only until the Session ends; no URL), the Board and its post numbers, and the v1 → v2 storage keys.
   - _Requirements: 8.1, 12.1_

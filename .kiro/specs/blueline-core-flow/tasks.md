@@ -208,6 +208,7 @@ Conventions for every task:
   - _Requirements: 7.9, 7.13, 10.2, 12.8, 13.1, 13.2, 13.4, 15.2_
 
 - [ ] 16. Write `README.md`
+  - **Moved to the README task of the last spec (마지막 스펙의 README 태스크로 옮김). Not done in this spec.**
   - Follow the README plan in the design: what it is, how to try it (the 1 MIN demo path), how it works, privacy, known limitations (including that on iPhone Safari the user sees NO CARRIER and the receipt on return), development commands and layout, how Kiro specs, steering, and hooks were used, and credits and licenses.
   - _Requirements: 13.5, 15.4_
 
