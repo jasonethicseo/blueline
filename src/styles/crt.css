@@ -97,18 +97,23 @@ body {
   align-items: stretch;
 }
 
+/* Size containment: the column of "|" adds no height of its own; the row's content sets
+   the height and the side stretches to it, clipping the extra bars. */
 .box-side {
   flex: none;
   width: 1ch;
   white-space: pre;
   overflow: hidden;
   line-height: 1;
+  contain: size;
 }
 
+/* pre-wrap keeps the padded label columns ("SESSION FEE  ₩40") and still wraps long text. */
 .box-cell {
   flex: 1;
   min-width: 0;
   padding: 0 1ch;
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
