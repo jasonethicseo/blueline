@@ -38,15 +38,15 @@ Conventions for every task:
     - **Property 3: Elapsed and remaining are clamped**
     - **Validates: Requirements 6.3, 6.11, 6.12, 6.13, 6.14, 6.15**
 
-- [ ] 3. URL normalizer
-  - [ ] 3.1 Implement `src/core/url.ts`
+- [x] 3. URL normalizer
+  - [x] 3.1 Implement `src/core/url.ts`
     - `normalizeUrl(raw)` following the four-step algorithm in the design, including the `host:port` exception to scheme detection and the `8 + length > 2048` rejection that keeps idempotence.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.8_
-  - [ ] 3.2 Write property tests for the URL normalizer
+  - [x] 3.2 Write property tests for the URL normalizer
     - **Property 4: URL normalizer accepts only http(s) and is idempotent**
     - **Property 5: Non-http schemes are rejected**
     - **Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.8**
-  - [ ] 3.3 Write unit tests for URL examples
+  - [x] 3.3 Write unit tests for URL examples
     - `youtube.com` → `https://youtube.com`, `HTTPS://Example.com/a` unchanged, `example.com:8080/x`, `javascript:alert(1)` → `SCHEME`, `http://` → `INVALID`, `localhost`, `-a.com`, whitespace-only → `EMPTY`, a 2049-character input → `INVALID`.
     - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6_
 

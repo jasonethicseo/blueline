@@ -172,7 +172,7 @@ Algorithm, in order:
 3. If `text` matches `^[a-z][a-z0-9+.-]*:` (case-insensitive), it has a scheme:
    - scheme `http` or `https` and the text starts with `http://` or `https://`: parse the part after `//` up to the first `/`, `?` or `#` as the authority; an empty host → `INVALID`; otherwise accept `text` unchanged (Req 3.2).
    - any other scheme → `SCHEME` (Req 3.4).
-   - Exception: text like `example.com:8080/path` also matches the scheme pattern. Before treating it as a scheme, check whether the text matches the no-scheme rule in step 4; if it does, use step 4.
+   - Exception: text like `example.com:8080/path` also matches the scheme pattern. Before treating it as a scheme, check whether the text matches the no-scheme rule in step 4; if it does, use step 4. If the text starts with a valid host followed by `:`, `/`, `?`, `#` or the end but fails step 4 (for example `example.com:0`), it is `INVALID`, not `SCHEME`.
 4. No scheme: match `^HOST(:PORT)?([/?#].*)?$` where HOST is two or more dot-separated labels of 1–63 `[A-Za-z0-9-]` characters not starting or ending with `-`, and PORT is 1–65535 without leading sign. Match → accept `"https://" + text` (Req 3.3). No match → `INVALID`.
 
 Idempotence (Req 3.8): every accepted output starts with `http://` or `https://` and has a non-empty host, so it is accepted unchanged by step 3. The `https://` prefix can push a 2045–2048 character input over 2048; to keep idempotence, step 4 rejects inputs where `8 + length > 2048` as `INVALID`.
