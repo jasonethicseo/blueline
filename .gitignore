@@ -1,0 +1,5 @@
+# Never add /.kiro or any of its subfolders here (submission requirement).
+node_modules/
+dist/
+coverage/
+.DS_Store

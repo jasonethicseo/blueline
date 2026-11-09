@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Worktrail: checkpoint before compaction",
+      "trigger": "PreCompact",
+      "description": "Records branch, HEAD and dirty state on the current thread before context compaction.",
+      "action": {
+        "type": "command",
+        "command": "\"$HOME/.casebook/client/.venv/bin/python\" .kiro/scripts/worktrail_bridge.py checkpoint pre-compact 2>/dev/null || true",
+        "timeout": 20
+      }
+    }
+  ]
+}

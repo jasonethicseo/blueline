@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Worktrail: open threads at session start",
+      "trigger": "SessionStart",
+      "description": "Injects this worktree's current Worktrail thread and open threads into the agent context.",
+      "action": {
+        "type": "command",
+        "command": "\"$HOME/.casebook/client/.venv/bin/python\" .kiro/scripts/worktrail_bridge.py session-start 2>/dev/null || true",
+        "timeout": 20
+      }
+    }
+  ]
+}

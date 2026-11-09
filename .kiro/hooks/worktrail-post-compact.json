@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Worktrail: re-inject after compaction",
+      "trigger": "PostCompact",
+      "description": "After compaction, re-injects the active thread and asks the agent to record what only the summary holds.",
+      "action": {
+        "type": "command",
+        "command": "\"$HOME/.casebook/client/.venv/bin/python\" .kiro/scripts/worktrail_bridge.py post-compact 2>/dev/null || true",
+        "timeout": 20
+      }
+    }
+  ]
+}

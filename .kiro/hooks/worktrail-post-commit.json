@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Worktrail: attach new commits",
+      "trigger": "PostToolUse",
+      "description": "After a shell command, records a new git HEAD as a change on the current thread (idempotent).",
+      "matcher": "execute_bash",
+      "action": {
+        "type": "command",
+        "command": "\"$HOME/.casebook/client/.venv/bin/python\" .kiro/scripts/worktrail_bridge.py post-commit 2>/dev/null || true",
+        "timeout": 20
+      }
+    }
+  ]
+}
