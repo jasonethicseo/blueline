@@ -63,22 +63,22 @@ Conventions for every task:
     - Help lines for every view match the accepted-commands table.
     - _Requirements: 12.2, 12.4, 12.14, 12.15_
 
-- [ ] 5. Records and history
-  - [ ] 5.1 Implement `src/core/record.ts`
+- [x] 5. Records and history
+  - [x] 5.1 Implement `src/core/record.ts`
     - `SessionRecord` and `ActiveSession` types; `serializeHistory`, `parseHistory` (whole-text rejection rules), `serializeActive`, `parseActive`. No URL field anywhere.
     - _Requirements: 10.1, 10.3, 10.4, 11.5_
-  - [ ] 5.2 Write property tests for records
+  - [x] 5.2 Write property tests for records
     - **Property 12: History serialization round trip**
     - **Property 13: Unreadable history is rejected as a whole**
     - **Validates: Requirements 10.3, 10.4, 10.5**
-  - [ ] 5.3 Implement `src/core/history.ts`
+  - [x] 5.3 Implement `src/core/history.ts`
     - `periodStarts(now)` with local midnight and the most recent Monday; `totals(records, now)`; `appendRecord` keeping the newest 1000; `buildReceipt` with the `reset` and `unavailable` notices.
     - _Requirements: 9.3, 9.4, 10.6, 10.7, 10.10_
-  - [ ] 5.4 Write property tests for history
+  - [x] 5.4 Write property tests for history
     - **Property 11: Today and week totals**
     - **Property 18: History keeps the newest 1000 records**
     - **Validates: Requirements 9.3, 9.4, 9.5, 9.6, 10.3, 10.10**
-  - [ ] 5.5 Write unit tests for period boundaries and receipt notices
+  - [x] 5.5 Write unit tests for period boundaries and receipt notices
     - `periodStarts` on a Monday, on a Sunday, and one second after midnight.
     - `buildReceipt` for `ok`, `reset`, and `unavailable` history status (totals from the current record only for `unavailable`).
     - _Requirements: 9.3, 9.4, 10.6, 10.7_

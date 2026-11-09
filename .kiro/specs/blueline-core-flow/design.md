@@ -212,8 +212,8 @@ Commands accepted per view (anything else that parses as a Command shows `COMMAN
 
 ```ts
 export type Phase = 'IDLE' | 'DIALING' | 'SELECT_DEST' | 'SELECT_DURATION' | 'CONNECTED' | 'ENDED';
-export type Label = 'YOUTUBE' | 'INSTAGRAM' | 'CUSTOM';
-export type EndReason = 'TIME UP' | 'HANG UP';
+// Label and EndReason are defined in record.ts (stored data owns them) and imported here.
+import type { Label, EndReason, SessionRecord, ActiveSession } from './record';
 
 export interface Destination { label: Label; url: string }
 export interface Session { id: number; start: number; plannedSec: number; label: Label }
