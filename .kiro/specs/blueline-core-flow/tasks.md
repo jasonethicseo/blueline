@@ -50,15 +50,15 @@ Conventions for every task:
     - `youtube.com` → `https://youtube.com`, `HTTPS://Example.com/a` unchanged, `example.com:8080/x`, `javascript:alert(1)` → `SCHEME`, `http://` → `INVALID`, `localhost`, `-a.com`, whitespace-only → `EMPTY`, a 2049-character input → `INVALID`.
     - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [ ] 4. Command parser
-  - [ ] 4.1 Implement `src/core/commands.ts`
+- [x] 4. Command parser
+  - [x] 4.1 Implement `src/core/commands.ts`
     - `parseCommand(text)` returning `empty`, `command`, `unknownDestination`, or `unknown`.
     - `acceptedCommands(view)` returning the `help` lines for each view in the design's accepted-commands table, including the Connect confirm view (`0`, `back`, Escape, `help`, Enter).
     - _Requirements: 8.1, 12.2, 12.3, 12.4, 12.14, 12.15, 12.16_
-  - [ ] 4.2 Write property test for command parsing
+  - [x] 4.2 Write property test for command parsing
     - **Property 6: Command parsing ignores case and surrounding whitespace**
     - **Validates: Requirements 8.1, 12.2**
-  - [ ] 4.3 Write unit tests for the command parser
+  - [x] 4.3 Write unit tests for the command parser
     - `1`, `2`, `go yt`, `bye`, empty, `xyz` (Req 12.15); plus `go`, `go xx`, ` BYE `, `Help`, ` GO  YT `.
     - Help lines for every view match the accepted-commands table.
     - _Requirements: 12.2, 12.4, 12.14, 12.15_
