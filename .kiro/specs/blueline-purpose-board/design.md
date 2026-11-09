@@ -22,7 +22,7 @@ The reducer still returns effects as data: `step(state, event) → { state, effe
 |---|---|---|
 | Message (to future you) | `memo` | `AppState.message` already holds status text such as `INVALID SELECTION`. |
 | Purpose | `purpose` | |
-| Outcome | `outcome`: `'ACHIEVED' \| 'NOT ACHIEVED' \| 'NO ANSWER'` | Same words as the requirements. |
+| Outcome | `outcome`: `'DONE' \| 'DRIFTED' \| 'NO ANSWER'` | Same words as the requirements and the screens, so stored values, code, and UI use one term each. |
 | Post_Number | `no` | Short field name in stored JSON. |
 | Purpose_Screen / Message_Screen | views `purpose` / `memo` | |
 | Purpose_Check_Screen | view `check` | |
@@ -45,6 +45,7 @@ The reducer still returns effects as data: `step(state, event) → { state, effe
 | Plain-text display | Purpose and Message are always set with `textContent` (the existing `el`, `line`, `pair` helpers). | No HTML interpretation (Req 11.3). |
 | Privacy | `notifyTimeUp` text and `page.ts` title text are not changed. | Tab title and notification never include Purpose or Message (Req 1.9, 11.6). |
 | Box height | `box.ts` `SIDE_TEXT` grows from 8 to 12 lines. | A 60-Hangul Purpose is 120 columns and wraps to 5 rows inside the 28-column box content. 12 leaves room for emoji and narrow viewports. |
+| Outcome words | Stored and shown as `DONE`, `DRIFTED`, `NO ANSWER`. The receipt always shows the words. The Board renders both the words and `Y`/`N`/`?` and lets a 600 px media query pick one. | Readable counts were asked for in design review. Picking the form in CSS keeps the core free of viewport logic and switches on rotate with no re-render (Req 6.2, 7.3). |
 
 ## Architecture
 
@@ -145,7 +146,7 @@ The demo uses no Message, so the 3 s NO CARRIER timer still runs. With a Message
 
 ```ts
 // src/core/record.ts
-export type Outcome = 'ACHIEVED' | 'NOT ACHIEVED' | 'NO ANSWER';
+export type Outcome = 'DONE' | 'DRIFTED' | 'NO ANSWER';
 export const OUTCOMES: readonly Outcome[];
 
 export interface SessionRecord {
@@ -215,7 +216,7 @@ export type Effect = /* existing */
   { "no": 1, "start": 1794200000000, "end": 1794200060000, "plannedSec": 60, "actualSec": 60,
     "fee": 40, "reason": "TIME UP", "label": "YOUTUBE", "purpose": null, "outcome": "NO ANSWER" },
   { "no": 2, "start": 1794300000000, "end": 1794300042000, "plannedSec": 300, "actualSec": 42,
-    "fee": 40, "reason": "HANG UP", "label": "CUSTOM", "purpose": "강의 영상 하나만 보기", "outcome": "ACHIEVED" }
+    "fee": 40, "reason": "HANG UP", "label": "CUSTOM", "purpose": "강의 영상 하나만 보기", "outcome": "DONE" }
 ] }
 
 // localStorage "blueline.active.v2"
@@ -236,6 +237,9 @@ export const MAX_PURPOSE = 60;
 export const MAX_MEMO = 120;
 export const BOARD_PAGE_SIZE = 20;
 export const NO_PURPOSE = '(NO PURPOSE)';
+export const OUTCOME_LABEL = { DONE: 'DONE', DRIFTED: 'DRIFTED', 'NO ANSWER': 'NO ANSWER' } as const;
+export const OUTCOME_SHORT = { DONE: 'Y', DRIFTED: 'N', 'NO ANSWER': '?' } as const;
+export const NARROW_MAX_PX = 599; // Narrow viewport: below 600 CSS px (used by crt.css; kept here as the one number)
 ```
 
 `TIMING`, `DURATIONS`, `FEE_RATE`, and `MAX_HISTORY` stay as they are.
@@ -294,7 +298,7 @@ No other event changes the state. In particular, no event here returns `requestN
 | View | Event | Result |
 |---|---|---|
 | nocarrier | `NOCARRIER_DONE` | `memo = null`; `view = 'check'` if `record.purpose !== null`, else `'receipt'` (Req 5.1, 5.9) |
-| check | `ANSWER { yes }` | `record.outcome = yes ? 'ACHIEVED' : 'NOT ACHIEVED'`, `view = 'receipt'`, effect `saveOutcome { start, outcome }` (Req 5.3, 5.4) |
+| check | `ANSWER { yes }` | `record.outcome = yes ? 'DONE' : 'DRIFTED'`, `view = 'receipt'`, effect `saveOutcome { start, outcome }` (Req 5.3, 5.4) |
 | check | `MENU_KEY` (any digit) | message `PRESS Y OR N` (Req 5.6) |
 | receipt | `DIAL_AGAIN` or `MENU_KEY 1` | `initialState(seq)` (core Req 9.9) |
 | receipt | other `MENU_KEY` | `INVALID SELECTION` (core Req 9.11) |
@@ -304,7 +308,11 @@ No other event changes the state. In particular, no event here returns `requestN
 ### `src/core/board.ts` (new)
 
 ```ts
-export interface BoardRow { no: number; date: string; purpose: string; time: string; mark: 'Y' | 'N' | '?' }
+export interface BoardRow {
+  no: number; date: string; purpose: string; time: string;
+  outcome: string;                 // Outcome_Label: 'DONE' | 'DRIFTED' | 'NO ANSWER'
+  mark: 'Y' | 'N' | '?';           // Outcome_Short_Form, shown only on a Narrow viewport
+}
 export interface BoardView { rows: BoardRow[]; page: number; pages: number }
 export function boardPage(records: readonly SessionRecord[], page: number): BoardView;
 export function localDate(ms: number): string;  // 'YYYY-MM-DD' in the local time zone
@@ -312,7 +320,7 @@ export function boardStep(state: AppState, event: Event): StepResult;
 ```
 
 - `pages = max(1, ceil(n / 20))`. Page `p` holds the records at positions `n − 20p .. n − 20(p−1) − 1`, newest first. Page 1 holds the 20 newest (Req 7.4).
-- Rows: `no` is the stored Post_Number (Req 7.3). `date = localDate(record.end)`. `purpose = record.purpose ?? '(NO PURPOSE)'`. `time = formatMMSS(actualSec)`. `mark` from the Outcome.
+- Rows: `no` is the stored Post_Number (Req 7.3). `date = localDate(record.end)`. `purpose = record.purpose ?? '(NO PURPOSE)'`. `time = formatMMSS(actualSec)`. `outcome` and `mark` from `OUTCOME_LABEL` and `OUTCOME_SHORT` in `config.ts`.
 - `localDate` builds a `Date` from the passed timestamp (no clock read), as `periodStarts` does.
 
 `boardStep`:
@@ -351,7 +359,7 @@ The v2 reader applies the same core rules plus: `no` is a positive safe integer 
 ### `src/core/history.ts` (changed)
 
 ```ts
-export interface Counts { y: number; n: number; q: number }
+export interface Counts { done: number; drifted: number; noAnswer: number }
 export function outcomeCounts(records: readonly Pick<SessionRecord, 'end' | 'outcome'>[], now: number):
   { today: Counts; week: Counts; all: Counts };
 export function appendRecord(records: readonly SessionRecord[], r: NewRecord): SessionRecord[];
@@ -364,7 +372,8 @@ export interface ReceiptModel {
 export function buildReceipt(record: NewRecord, history: HistoryStatus, now: number): ReceiptModel;
 ```
 
-- `outcomeCounts`: Today and This_Week use the `periodStarts` rule of `totals()` (`dayStart ≤ end ≤ now`, `weekStart ≤ end ≤ now`). `all` counts every record. `ACHIEVED → y`, `NOT ACHIEVED → n`, `NO ANSWER → q` (Req 6.2–6.6).
+- `outcomeCounts`: Today and This_Week use the `periodStarts` rule of `totals()` (`dayStart ≤ end ≤ now`, `weekStart ≤ end ≤ now`). `all` counts every record. Each Outcome increments its own field (Req 6.2–6.6).
+- `countLine(c: Counts): string` returns the Outcome_Count_Line `DONE 1 · DRIFTED 0 · NO ANSWER 2`, with U+00A0 (no-break space) between each label and its number and inside `NO ANSWER`, and ordinary spaces around `·`, so the line can only wrap at a separator (Req 6.2).
 - `appendRecord`: `[...records, { no: (records.at(-1)?.no ?? 0) + 1, ...r }].slice(-1000)` (Req 13.1, 13.2).
 - `setOutcome`: replaces the `outcome` of the newest record whose `start` equals `start`; returns the input unchanged if none matches. Count, order, numbers, and other fields stay the same (Req 8.8, 8.9).
 - `buildReceipt`: for `ok` and `reset`, counts are computed from `setOutcome(history.records, record.start, record.outcome)`, so the just-ended Session is counted with its answered Outcome even if the answer could not be written yet (Req 6.3). For `unavailable`, totals and counts use `[record]` only (Req 6.7). `totals()` is unchanged.
@@ -397,7 +406,7 @@ The new words are `COMMAND NOT AVAILABLE HERE - TYPE HELP` on every other screen
 - Destination menu adds `4 - BOARD`.
 - Duration menu: `0 - BACK (MESSAGE)`, `BACK - MESSAGE SCREEN`.
 - Board: `N - NEXT (OLDER) PAGE`, `P - PREV (NEWER) PAGE`, `0 - BACK`, `ESC - BACK`, `BACK - MAIN MENU`, `HELP - SHOW COMMANDS`.
-- Purpose check: `Y - ACHIEVED`, `N - NOT ACHIEVED`, `HELP - SHOW COMMANDS`.
+- Purpose check: `Y - YES (DONE)`, `N - NO (DRIFTED)`, `HELP - SHOW COMMANDS`.
 
 ### `src/app/controller.ts` and `src/app/keys.ts` (changed / new)
 
@@ -449,16 +458,16 @@ export const LEGACY_ACTIVE_KEY = 'blueline.active.v1';
 | File | Change |
 |---|---|
 | `screens/purpose.ts` (new) | Purpose_Screen and Message_Screen. Heading, labeled `<input type="text">` with `autocomplete="off"`, `enterkeyhint="next"`, no `maxLength`, value from `state.intent` when rebuilt; hint line (`ENTER TO CONTINUE. ESC OR BACK TO RETURN.` / `LEAVE EMPTY AND PRESS ENTER TO SKIP`); `BACK` button via `item()`. `keydown` Enter → ignore if composing, else `preventDefault()` and submit `input.value` once. `input` event → `typing()`. Mount keys `purpose` and `memo`. Focus the field in a microtask after mount, as the URL entry does. |
-| `screens/check.ts` (new) | `PURPOSE:` + the Purpose, `PURPOSE ACHIEVED? Y/N`, `YES` and `NO` buttons (≥ 44 px). |
-| `screens/board.ts` (new) | `BOARD` title, `PAGE p/n`, header `NO. DATE TIME Y/N PURPOSE`, rows, `NO POSTS` and the notice when empty, `NEXT`, `PREV`, `0. BACK` buttons. Mount key `board:<page>:<loaded>`. |
+| `screens/check.ts` (new) | `PURPOSE:` + the Purpose, `PURPOSE ACHIEVED? Y/N`, `Y. YES (DONE)` and `N. NO (DRIFTED)` buttons (≥ 44 px). |
+| `screens/board.ts` (new) | `BOARD` title, `PAGE p/n`, header `NO. DATE TIME OUTCOME PURPOSE`, rows, `NO POSTS` and the notice when empty, `N. NEXT`, `P. PREV`, `0. BACK` buttons. Each row has the Outcome twice, a `.mark-long` span with the Outcome_Label and a `.mark-short` span with the Outcome_Short_Form; CSS shows exactly one of them, and the hidden one uses `display: none`, so screen readers read one. Mount key `board:<page>:<loaded>`. |
 | `screens/menu.ts` | `4. BOARD` item; hint `PRESS 1-4, OR TYPE GO YT / GO IG`; the Duration_Menu back button reads `0. BACK`. |
 | `screens/session.ts` | `PURPOSE: <purpose or (NO PURPOSE)>` line under `CONNECTED TO <label>` (Req 1.9). |
 | `screens/nocarrier.ts` | When `ended.memo` is set: `MESSAGE FROM THE PAST` and the memo below the disconnect line, and the hint `PRESS ENTER OR TAP TO CONTINUE` (Req 4.1, 4.3). Mount key includes whether a memo is shown. |
-| `screens/receipt.ts` | Rows `PURPOSE` (label row, then the wrapped text) and `OUTCOME`; under `TODAY` and `THIS WEEK`, a row with the counts as `Y1 N0 ?2` in the value column (Req 6.1, 6.2). |
+| `screens/receipt.ts` | Rows `PURPOSE` (label row, then the wrapped text) and `OUTCOME` (the Outcome_Label); directly under `TODAY` and under `THIS WEEK`, a row with the `countLine` text, indented to the value column and allowed to wrap at ` · ` (Req 6.1, 6.2). |
 | `screens/box.ts` | `SIDE_TEXT` 8 → 12 lines. |
 | `screens/view.ts` | `Handlers` adds `purposeSubmit`, `memoSubmit`, `answer`, `page`, `typing`. |
 | `main.ts` | Routes the four new views. Hides the Command_Prompt form (`form.hidden = true`) on `purpose` and `memo`. Counts those views as "focus owned by the screen" in the focus-restore check. |
-| `styles/crt.css` | `.text-field` full width; `.board-row` grid (`NO DATE TIME MARK PURPOSE` on one line at ≥ 600 px, the Purpose on a second line below 600 px); `overflow-wrap: anywhere` on Purpose, Message, and board rows, so 360 px has no horizontal scroll (Req 7.10, 11.4). |
+| `styles/crt.css` | `.text-field` full width; `.board-row` grid (`NO DATE TIME OUTCOME PURPOSE` on one line at ≥ 600 px with `.mark-long`; below 600 px, `.mark-short` and the Purpose on a second line); `overflow-wrap: anywhere` on Purpose, Message, and board rows, so 360 px has no horizontal page scroll (Req 7.3, 7.10, 11.4). |
 
 ## Correctness Properties
 
@@ -480,13 +489,13 @@ Each property test runs at least 100 fast-check cases and is tagged `// Feature:
 
 ### Property 3: Outcome counts add up
 
-*For any* history of 0–1000 records with random Outcomes and end timestamps, and any `now`, for each of Today, This_Week, and the whole history, `y + n + q` equals the number of records in that period, using a reference filter on `end`.
+*For any* history of 0–1000 records with random Outcomes and end timestamps, and any `now`, for each of Today, This_Week, and the whole history, `done + drifted + noAnswer` equals the number of records in that period, using a reference filter on `end`.
 
 **Validates: Requirements 6.3, 6.4, 6.6**
 
 ### Property 4: Week counts are at least today's counts
 
-*For any* history and `now`, `week.y ≥ today.y`, `week.n ≥ today.n`, and `week.q ≥ today.q`.
+*For any* history and `now`, each of `done`, `drifted`, and `noAnswer` for This_Week is greater than or equal to the same count for Today.
 
 **Validates: Requirements 6.5**
 
@@ -534,7 +543,7 @@ Each property test runs at least 100 fast-check cases and is tagged `// Feature:
 
 ### Property 12: Board pages cover the history
 
-*For any* history of 0–1000 records, concatenating `boardPage(records, p).rows` for `p = 1..pages` gives every record exactly once in descending `no` order; every page has at most 20 rows; page 1 holds the 20 newest; `pages = max(1, ceil(n / 20))`; each row's `no`, `date`, `time`, and `mark` match its record.
+*For any* history of 0–1000 records, concatenating `boardPage(records, p).rows` for `p = 1..pages` gives every record exactly once in descending `no` order; every page has at most 20 rows; page 1 holds the 20 newest; `pages = max(1, ceil(n / 20))`; each row's `no`, `date`, `time`, `outcome` (Outcome_Label), and `mark` (Outcome_Short_Form) match its record.
 
 **Validates: Requirements 7.3, 7.4**
 
@@ -596,10 +605,11 @@ Each property test runs at least 100 fast-check cases and is tagged `// Feature:
   - Board: empty history → `PAGE 1/1`, `NO POSTS`; 21 records → 2 pages; `NO MORE PAGES` at both ends; digits 1–9 → `INVALID SELECTION`.
   - Only the first answer counts; Esc on the check view does nothing.
   - Receipt: answered Outcome counted when `saveOutcome` failed; `HISTORY RESET` kept after `saveOutcome`.
+  - `countLine`: `DONE 1 · DRIFTED 0 · NO ANSWER 2`, with no-break spaces only inside each label-number pair.
   - Storage keys: v2 preferred, v1 fallback, v1 history never written, both active keys cleared (with a fake `localStorage`).
 - **Manual checks** (`docs/manual-checks.md`, new part C):
   - Hangul IME: macOS Chrome and Safari, and iPhone Safari. Type a Purpose ending in a composing syllable and press Enter: submitted once, last syllable kept. Esc while composing does not go back.
-  - 360 px viewport with a 60-Hangul Purpose (Session_Screen, check, receipt, Board) and a 120-Hangul Message (NO CARRIER): no horizontal scroll.
+  - 360 px viewport with a 60-Hangul Purpose (Session_Screen, check, receipt, Board) and a 120-Hangul Message (NO CARRIER): no horizontal scroll. The Board shows `Y`/`N`/`?` below 600 px and the words at 600 px and wider; the receipt count lines wrap only at ` · `.
   - Message shown after a hidden-tab Time_Up, after a Hang_Up, and after a reload past the end; not shown again after a reload on the receipt.
   - The full demo flow under 150 s with the 1 MIN duration.
   - DevTools Network: no request during the new screens.
@@ -624,8 +634,9 @@ Each property test runs at least 100 fast-check cases and is tagged `// Feature:
 
 The core spec files in `.kiro/specs/blueline-core-flow/` are not changed.
 
-## To Confirm in Design Review
+## Resolved in Design Review
 
-1. **Storage keys.** New data goes to `blueline.history.v2` and `blueline.active.v2`; the v1 history key is only read and never removed. After a rollback the old build still sees the pre-feature history, but sessions it records then are not seen by the new build. The alternative is to overwrite `blueline.history.v1` with the v2 format, which makes the old build reset its history after a rollback.
-2. **Board layout.** One line per post at 600 px and wider; below 600 px the Purpose moves to a second line under `NO DATE TIME Y/N`.
-3. **Receipt count format.** A row under `TODAY` and `THIS WEEK` showing `Y1 N0 ?2` in the value column.
+1. **Storage keys.** Approved: new data goes to `blueline.history.v2` and `blueline.active.v2`; the v1 history key is only read and never written or removed. After a rollback the old build still sees the pre-feature history; sessions it records then are not seen by the new build.
+2. **Board layout.** Approved: one line per post at 600 px and wider; below 600 px the Purpose moves to a second line under `NO DATE TIME` and the Outcome.
+3. **Outcome wording.** Changed in review: Outcomes are `DONE`, `DRIFTED`, and `NO ANSWER` everywhere. The receipt shows `DONE 1 · DRIFTED 0 · NO ANSWER 2` under each total. The Board shows the words at 600 px and wider, and `Y`/`N`/`?` only on a Narrow viewport.
+4. **Export.** Proposed in review and then withdrawn; not part of this spec.

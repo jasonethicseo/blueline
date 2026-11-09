@@ -1,0 +1,204 @@
+# Implementation Plan: BLUELINE Purpose, Message, Purpose Check, and Board
+
+## Overview
+
+Build on the working core flow in small steps. Each task leaves the app building, `npm test` passing, and the core flow usable. The stored history format and post numbers come first, because every later screen reads them. Then the receipt counts, the Purpose and Message screens, the Message delivery, the Purpose check, and the Board. A checkpoint, manual browser checks, and the README come last.
+
+Conventions for every task:
+
+- `src/core` files import nothing from `app`, `screens`, `audio`, or `platform`, and never call `Date.now()`, timers, or DOM APIs. `now` is passed in.
+- Keep each file under about 200 lines.
+- Property tests use fast-check with at least 100 runs and start with `// Feature: blueline-purpose-board, Property N: <title>`.
+- Do not edit `.kiro/specs/blueline-core-flow/`.
+- One task at a time: commit as `jasonseo <jasonethicseo@users.noreply.github.com>`, report, and wait for the next instruction.
+
+## Tasks
+
+- [ ] 1. Purpose and Message validation
+  - [ ] 1.1 Add constants to `src/core/config.ts`
+    - `MAX_PURPOSE = 60`, `MAX_MEMO = 120`, `BOARD_PAGE_SIZE = 20`, `NO_PURPOSE = '(NO PURPOSE)'`, `OUTCOME_LABEL`, `OUTCOME_SHORT`, `NARROW_MAX_PX = 599`. Leave `TIMING`, `DURATIONS`, `FEE_RATE`, and `MAX_HISTORY` unchanged.
+    - _Requirements: 1.3, 2.4, 6.1, 7.3, 7.4, 12.2_
+  - [ ] 1.2 Create `src/core/purpose.ts`
+    - `charCount` (code points), `validatePurpose`, `validateMemo`, `isStoredPurpose`, `isStoredMemo`, and the messages `PURPOSE REQUIRED`, `PURPOSE TOO LONG - MAX 60 CHARS`, `MESSAGE TOO LONG - MAX 120 CHARS`.
+    - _Requirements: 1.2, 1.3, 1.4, 1.5, 2.2, 2.3, 2.4, 2.5_
+  - [ ] 1.3 Write property tests in `tests/property/purpose.prop.test.ts`
+    - **Property 1: Purpose validation**
+    - **Property 2: Message validation**
+    - Generators mix Hangul, emoji, ASCII, U+3000, NBSP, and tabs.
+    - **Validates: Requirements 1.2, 1.3, 1.4, 1.5, 1.6, 2.2, 2.3, 2.4, 2.5**
+  - [ ] 1.4 Write unit tests in `tests/unit/purpose.test.ts`
+    - 60 and 61 Hangul syllables, 120 and 121, an emoji counted as one Character, U+3000 trimmed, whitespace-only → `EMPTY`, empty Message → `null`.
+    - _Requirements: 1.4, 1.5, 2.3, 2.5_
+
+- [ ] 2. Stored history format v2, legacy records, and post numbers
+  - [ ] 2.1 Extend the record types in `src/core/record.ts`
+    - `Outcome = 'DONE' | 'DRIFTED' | 'NO ANSWER'`, `OUTCOMES`, `SessionRecord` with `no`, `purpose`, `outcome`, and `NewRecord = Omit<SessionRecord, 'no'>`.
+    - `serializeHistory` writes `{ v: 2, records }` with only the listed fields. `parseHistory` dispatches on `v`.
+    - The v2 reader keeps every core rule and adds the checks for `no` (positive safe integer, strictly increasing), `purpose` (`null` or `isStoredPurpose`), and `outcome`.
+    - Leave the Active_Session_State format unchanged in this task (it changes in task 4).
+    - _Requirements: 8.1, 8.2, 8.5, 8.6, 13.6_
+  - [ ] 2.2 Create `src/core/record-legacy.ts`
+    - `parseHistoryV1`: the exact core v1 rules; numbers 1..n in stored order; `purpose: null`; `outcome: 'NO ANSWER'`; the seven core fields copied unchanged.
+    - _Requirements: 8.3, 8.4, 13.3_
+  - [ ] 2.3 Update `src/core/history.ts` and `src/core/session-end.ts`
+    - `appendRecord(records, r: NewRecord)` sets `no = (last no ?? 0) + 1`, then keeps the newest 1000.
+    - `setOutcome(records, start, outcome)` changes only the newest record with that `start`.
+    - `endRecord` returns a `NewRecord` with `purpose: null` and `outcome: 'NO ANSWER'` for now (task 4 passes the real Purpose). `endSession` effect payloads use `NewRecord`.
+    - `totals()` and `fee` stay unchanged.
+    - _Requirements: 5.5, 8.8, 8.9, 13.1, 13.2, 13.7_
+  - [ ] 2.4 Update `src/platform/storage.ts` for the history keys
+    - Write `blueline.history.v2` only. Read v2 first and fall back to `blueline.history.v1` only when the v2 key is missing. Never write or remove the v1 history key. An unreadable v2 key gives `reset` with no fallback.
+    - _Requirements: 8.7, design storage-key decision_
+  - [ ] 2.5 Update existing tests and generators for the new fields
+    - `tests/property/arbitraries.ts` gains `no`, `purpose`, `outcome`, plus a v1-record generator. Update core Properties 12, 13, and 18 and `tests/unit/history.test.ts` so they check the new fields. Keep their original intent.
+    - _Requirements: 8.5, 13.1_
+  - [ ] 2.6 Write property tests for formats in `tests/property/record.prop.test.ts`
+    - **Property 6: Legacy history keeps its totals**
+    - **Property 7: v2 serialization round trip**
+    - **Property 8: Bad v2 records make the whole text unreadable**
+    - **Validates: Requirements 6.6, 8.3, 8.4, 8.5, 8.6, 8.7, 13.3, 13.6**
+  - [ ] 2.7 Write property tests for post numbers in `tests/property/history.prop.test.ts`
+    - **Property 9: Post numbers survive removal**
+    - **Property 10: Post numbers are unique and increasing**
+    - Include sequences that pass the 1000-record cap and start from an empty, a v1-parsed, and a v2 history.
+    - **Validates: Requirements 13.1, 13.2, 13.4, 13.5, 13.7**
+  - [ ] 2.8 Write property test for `setOutcome` in `tests/property/outcomes.prop.test.ts`
+    - **Property 11: Writing an answer changes one Outcome only**
+    - **Validates: Requirements 8.8, 8.9**
+  - [ ] 2.9 Write unit tests for the history keys in `tests/unit/storage.test.ts`
+    - With a fake `localStorage`: v2 preferred; v1 fallback; v1 never written; unreadable v2 → `reset`; storage that throws → `unavailable`.
+    - _Requirements: 8.7, core 10.6, core 10.7_
+
+- [ ] 3. Outcome counts on the receipt
+  - [ ] 3.1 Add `outcomeCounts` and `countLine` to `src/core/history.ts`
+    - Same end-timestamp rule as `totals()`. `countLine` uses no-break spaces inside each label-number pair and inside `NO ANSWER`.
+    - `buildReceipt` adds `counts`, computed with `setOutcome(history.records, record.start, record.outcome)` for `ok`/`reset` and from `[record]` for `unavailable`.
+    - Move code into a new `src/core/outcomes.ts` if `history.ts` would pass about 200 lines.
+    - _Requirements: 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
+  - [ ] 3.2 Update `src/screens/receipt.ts` and `src/screens/box.ts`
+    - Rows `PURPOSE` (the Purpose or `(NO PURPOSE)`, wrapped) and `OUTCOME`, and a `countLine` row directly under `TODAY` and under `THIS WEEK`. Raise `SIDE_TEXT` from 8 to 12 lines. Set the Purpose with `textContent` only.
+    - _Requirements: 6.1, 6.2, 11.3, 11.4_
+  - [ ] 3.3 Write property tests in `tests/property/outcomes.prop.test.ts`
+    - **Property 3: Outcome counts add up**
+    - **Property 4: Week counts are at least today's counts**
+    - Add this file to the `new-york` project in `vitest.config.ts`.
+    - **Validates: Requirements 6.3, 6.4, 6.5, 6.6**
+  - [ ] 3.4 Write unit tests
+    - `countLine` text and its no-break spaces; receipt counts with `unavailable` history use only the current Session.
+    - _Requirements: 6.2, 6.7_
+
+- [ ] 4. Purpose and Message screens (SET_PURPOSE)
+  - [ ] 4.1 Extend the state machine in `src/core/session.ts` and create `src/core/session-intent.ts`
+    - Phase `SET_PURPOSE`, `AppState.intent` and `textStep`, events `PURPOSE_SUBMIT`, `MEMO_SUBMIT`, `TYPING`.
+    - Selecting a destination goes to the Purpose_Screen. `toDestMenu` clears `intent`. Back from the Duration_Menu goes to the Message_Screen with the earlier Message.
+    - The connecting step copies `purpose` and `memo` into `Session` and `saveActive`, then clears `intent`.
+    - `endRecord` takes `purpose` from the Session.
+    - _Requirements: 1.1, 1.3, 1.4, 1.5, 1.7, 1.8, 2.3, 2.4, 2.5, 3.3, 3.4, 3.5, 9.1, 10.1, 10.2_
+  - [ ] 4.2 Active_Session_State v2 and recovery
+    - `serializeActive` writes `{ v: 2, …, purpose, memo }`. `parseActive` reads v1 through `parseActiveV1` (`purpose: null`, `memo: null`) and checks v2 Purpose and memo. `recover` carries both into the Session.
+    - `storage.ts`: write `blueline.active.v2`, read v2 then v1, and have `clearActive` remove both keys.
+    - _Requirements: 9.1, 9.2, 9.4, 9.5_
+  - [ ] 4.3 Commands, keys, and the controller split
+    - `ViewName` gains `purpose` and `memo`. Duration_Menu `help` says `0 - BACK (MESSAGE)` and `BACK - MESSAGE SCREEN`.
+    - Move submit, Enter, and Escape mapping from `controller.ts` to the new `src/app/keys.ts`. Escape on `purpose` and `memo` → back.
+    - `input.ts`: return early when `e.isComposing || e.keyCode === 229`.
+    - Handlers gain `purposeSubmit`, `memoSubmit`, `typing`.
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.6, 11.2_
+  - [ ] 4.4 Create `src/screens/purpose.ts` and update `main.ts`, `screens/session.ts`, `screens/view.ts`, and `crt.css`
+    - Purpose_Screen and Message_Screen as in the design. Enter in the field's own `keydown` handler, ignored while composing. No `maxLength`. A BACK button. The `input` event dispatches `TYPING`.
+    - `main.ts` routes the views, hides the Command_Prompt form on them, and lets them own focus.
+    - The Session_Screen shows `PURPOSE: <purpose or (NO PURPOSE)>`. The tab title and notification text do not change.
+    - _Requirements: 1.1, 1.9, 2.1, 3.1, 3.2, 3.6, 3.7, 3.8, 11.1, 11.3, 11.4, 11.5, 11.6_
+  - [ ] 4.5 Update the session generators and core state-machine properties
+    - `tests/property/session-arb.ts` gains paths through `SET_PURPOSE`. Update core Properties 7, 8, 9, 16, 17 and `recover.prop.test.ts` (core Property 15, now for v1 and v2 active text).
+    - _Requirements: 9.4, 9.5, 10.6_
+  - [ ] 4.6 Write property tests in `tests/property/session.prop.test.ts`
+    - **Property 15: Permission and opening stay in their places**
+    - **Property 16: Only listed transitions happen**
+    - **Validates: Requirements 10.1, 10.2, 10.4, 10.5**
+  - [ ] 4.7 Write unit tests
+    - Back from the Message_Screen keeps the Purpose. Back from the Duration_Menu shows the earlier Message. `back`, `bye`, and `0` submitted in the Purpose_Field are accepted as Purpose text. Duration_Menu `help` lines.
+    - _Requirements: 3.2, 3.4, 3.5, 11.2_
+
+- [ ] 5. Message delivery at NO CARRIER
+  - [ ] 5.1 Carry the memo into the ended state
+    - `endSession` sets `ended.memo = session.memo` and keeps `session.memo = null`. `NOCARRIER_DONE` sets `ended.memo = null`. A recovered expired Session shows its memo.
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 9.3_
+  - [ ] 5.2 Update `src/screens/nocarrier.ts` and the controller timer
+    - When `ended.memo` is set: `MESSAGE FROM THE PAST`, the Message as text, and `PRESS ENTER OR TAP TO CONTINUE`. The controller does not arm the 3 s timer while `ended.memo` is set.
+    - _Requirements: 4.1, 4.3, 4.6, 12.2_
+  - [ ] 5.3 Write property test in `tests/property/memo.prop.test.ts`
+    - **Property 5: A Message is shown at most once**
+    - Model reloads with a fake storage map and `recover()`.
+    - **Validates: Requirements 4.4, 4.5, 9.6**
+  - [ ] 5.4 Write property test in `tests/property/record.prop.test.ts`
+    - **Property 14: Storage holds no URL, and history holds no Message**
+    - Replaces core Property 14.
+    - **Validates: Requirements 4.4, 8.1, 8.2**
+  - [ ] 5.5 Write unit tests
+    - Message shown after a Hang_Up and after a Time_Up; no heading when there is no Message; no 3 s move-on while a Message is shown.
+    - _Requirements: 4.1, 4.3, 4.6_
+
+- [ ] 6. Purpose check
+  - [ ] 6.1 Create `src/core/session-ended.ts`
+    - ENDED views `nocarrier → check → receipt` (skip `check` when the Purpose is `null`). `ANSWER { yes }` sets `DONE` or `DRIFTED`, moves to the receipt, and returns `saveOutcome`. Digits on `check` → `PRESS Y OR N`. No backward transitions.
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6, 5.7, 5.9, 10.3_
+  - [ ] 6.2 Effects, controller, commands, and input
+    - `saveOutcome` effect with `setOutcome`. `historyWritten` keeps a `reset` status through the answer write. A failed write → `unavailable`.
+    - Commands: `word` kind for `y`, `yes`, `n`, `no`. On `check`, everything except these and `help` → `PRESS Y OR N`, including empty Enter. Check `help` lines.
+    - `input.ts`: `y` and `n` keys on `check`. `keys.ts`: Escape on `check` does nothing.
+    - _Requirements: 5.3, 5.4, 5.6, 5.8, 5.11, 11.2_
+  - [ ] 6.3 Create `src/screens/check.ts`
+    - `PURPOSE:` and the Purpose, `PURPOSE ACHIEVED? Y/N`, `Y. YES (DONE)` and `N. NO (DRIFTED)` buttons (≥ 44 px). No auto-advance.
+    - _Requirements: 5.2, 5.10, 11.4_
+  - [ ] 6.4 Write property test in `tests/property/session.prop.test.ts`
+    - **Property 13: Ended screens move only forward, and ended is final**
+    - **Validates: Requirements 10.3, 10.6**
+  - [ ] 6.5 Write unit tests
+    - Only the first answer counts. Esc keeps the check view. A Session recovered from a v1 active state skips the check and records NO ANSWER. The receipt shows the answered Outcome when `saveOutcome` fails. `HISTORY RESET` is still shown after the answer is saved.
+    - _Requirements: 5.7, 5.8, 5.9, 5.11, 13.7_
+
+- [ ] 7. Board
+  - [ ] 7.1 Create `src/core/board.ts`
+    - `localDate`, `boardPage` (rows with `no`, `date`, `purpose`, `time`, `outcome`, `mark`), `boardStep` (`BOARD_LOADED`, `BOARD_PAGE`, back, digits).
+    - _Requirements: 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.13_
+  - [ ] 7.2 Wire the Board into the menu, commands, effects, and input
+    - `MENU_KEY 4` on the Destination_Menu → `board` + `loadBoard` effect → `BOARD_LOADED`. `toDestMenu` clears `board`.
+    - Commands `n` and `p` on the Board, `4 - BOARD` in the Destination_Menu `help`, and the Board `help` lines. `input.ts`: `n`/`p` keys and digits on the Board. Escape on the Board → back.
+    - _Requirements: 7.1, 7.2, 7.5, 7.6, 7.7, 7.11, 7.13, 11.2_
+  - [ ] 7.3 Create `src/screens/board.ts` and update `screens/menu.ts` and `crt.css`
+    - `4. BOARD` item and the hint `PRESS 1-4, OR TYPE GO YT / GO IG`.
+    - Board title, `PAGE p/n`, the header, rows with `.mark-long` and `.mark-short`, `NO POSTS` and notices, and the `N. NEXT`, `P. PREV`, `0. BACK` buttons (≥ 44 px).
+    - The grid shows one line per post at 600 px and wider. Below 600 px, the Purpose goes on a second line and only `Y`/`N`/`?` is shown. `overflow-wrap: anywhere`.
+    - _Requirements: 7.1, 7.3, 7.8, 7.9, 7.10, 7.12, 11.3, 11.4, 11.5_
+  - [ ] 7.4 Write property test in `tests/property/board.prop.test.ts`
+    - **Property 12: Board pages cover the history**
+    - Add this file to the `new-york` project in `vitest.config.ts`.
+    - **Validates: Requirements 7.3, 7.4**
+  - [ ] 7.5 Write unit tests
+    - Empty history → `PAGE 1/1` and `NO POSTS`. 21 records → 2 pages. `NO MORE PAGES` at both ends. Digits 1–9 → `INVALID SELECTION`. `reset` and `unavailable` notices. Opening and paging return no effects other than `loadBoard`. `n` on the Destination_Menu → `COMMAND NOT AVAILABLE HERE - TYPE HELP`.
+    - _Requirements: 7.5, 7.6, 7.8, 7.9, 7.11, 7.13_
+
+- [ ] 8. Checkpoint
+  - Run `npm test` (both time-zone projects) and `npm run build`. Both must pass with no type errors.
+  - Check that every file in `src/` is under about 200 lines and that `src/core` imports nothing from `app`, `screens`, `audio`, or `platform` and has no `Date.now()`, timers, or DOM access.
+  - Update `.kiro/steering/structure.md` with the new files (`core/purpose.ts`, `session-intent.ts`, `session-ended.ts`, `board.ts`, `record-legacy.ts`, `outcomes.ts` if created, `app/keys.ts`, `screens/purpose.ts`, `check.ts`, `board.ts`) and the new state list.
+  - Ask the user if questions come up before the manual checks.
+  - _Requirements: 10.1, 12.2_
+
+- [ ] 9. Manual checks and browser check
+  - [ ] 9.1 Add part C to `docs/manual-checks.md`
+    - Hangul IME on macOS Chrome, macOS Safari, and iPhone Safari: a Purpose ending in a composing syllable is submitted once with the last syllable, and Esc while composing does not go back.
+    - 360 px with a 60-Hangul Purpose (Session_Screen, check, receipt, Board) and a 120-Hangul Message (NO CARRIER): no horizontal scroll. The Board shows `Y`/`N`/`?` below 600 px and the words at 600 px and wider. The receipt count lines wrap only at ` · `.
+    - The Message after a hidden-tab Time_Up, after a Hang_Up, and after a reload past the end; not again after a reload on the receipt.
+    - Legacy data: put v1 history and v1 active text in `localStorage`, reload, and check the Board numbers, `(NO PURPOSE)`, NO ANSWER, and unchanged totals.
+    - The full 1 MIN demo under 150 s. DevTools Network shows no request on the new screens.
+    - Before writing this part, ask the user which devices are available for the IME check.
+    - _Requirements: 3.6, 3.7, 4.2, 4.5, 7.10, 8.4, 11.4, 11.7, 12.1_
+  - [ ] 9.2 Run a headless browser check of the new flow
+    - With the same approach as the core flow check: dial → Purpose → Message → 1 MIN → connect → NO CARRIER with a Message → Y → receipt → Board, under a fake clock. Record the results in `docs/manual-checks.md`.
+    - _Requirements: 4.1, 5.3, 6.2, 7.2, 12.1_
+
+- [ ] 10. README
+  - Update `README.md` (or write it, if core task 16 has not run yet): the new flow, the 150 s demo path with a short Purpose, what is stored (Purpose and Outcome in history; Message only until the Session ends; no URL), the Board and its post numbers, and the v1 → v2 storage keys.
+  - _Requirements: 8.1, 12.1_
