@@ -55,4 +55,4 @@ Revive the constraints of 1990s Korean dial-up BBS networks ("PC-tongsin"), beca
 - No third-party logos or trademarks in the UI or demo. Destinations are shown as plain text labels only.
 
 ## Demo success criteria
-- A judge on a laptop can complete dial → connect → `NO CARRIER` → receipt in under 2 minutes using the 1-minute demo duration.
+- A judge on a laptop can complete dial → purpose → connect → `NO CARRIER` → purpose check → receipt in under 2 minutes 30 seconds using the 1-minute demo duration.
