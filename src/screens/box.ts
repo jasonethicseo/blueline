@@ -13,8 +13,9 @@ function edge(cols: number): HTMLParagraphElement {
   return p;
 }
 
-// A column of "|" taller than any row; CSS clips it to the row height.
-const SIDE_TEXT = Array.from({ length: 8 }, () => '|').join('\n');
+// A column of "|" taller than any row; CSS clips it to the row height. 12 lines covers a
+// 60-Character Hangul Purpose (about 5 lines) with room to spare (purpose-board design).
+const SIDE_TEXT = Array.from({ length: 12 }, () => '|').join('\n');
 
 function side(): HTMLSpanElement {
   const s = el('span', 'box-side', SIDE_TEXT);

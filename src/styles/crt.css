@@ -1,7 +1,8 @@
 /* BLUELINE: 1990s PC-tongsin blue screen.
    Class names used by src/screens/*:
    .screen, .line, .title, .dim, .em, .box, .box-row, .box-side, .box-edge, .box-cell,
-   .item (menu button), .action (CONNECT / HANG UP button), .url-input, .meter, .notice */
+   .item (menu button), .action (CONNECT / HANG UP button), .url-input, .meter, .notice,
+   .box-indent, .counts */
 
 @font-face {
   font-family: 'GalmuriMono11';
@@ -115,6 +116,18 @@ body {
   padding: 0 1ch;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* Wrapped text under a label row: the Purpose and the Outcome counts (purpose-board Req 6). */
+.box-indent {
+  display: block;
+  padding-left: 2ch;
+}
+
+/* An Outcome_Count_Line wraps only after a "·": its other spaces are no-break spaces,
+   and each piece (at most 15 characters) always fits the 26-column indent (Req 6.2). */
+.box-indent.counts {
+  overflow-wrap: normal;
 }
 
 button {

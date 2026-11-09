@@ -16,7 +16,23 @@ export interface ReceiptModel {
   record: NewRecord;
   today: number;
   week: number;
+  /** Outcome counts for Today and This_Week, including the Session that just ended (Req 6.2, 6.3). */
+  counts: { today: Counts; week: Counts };
   notice: typeof NOTICE_RESET | typeof NOTICE_UNAVAILABLE | null;
+}
+
+export interface Counts {
+  done: number;
+  drifted: number;
+  noAnswer: number;
+}
+
+const zero = (): Counts => ({ done: 0, drifted: 0, noAnswer: 0 });
+
+function add(c: Counts, outcome: Outcome): void {
+  if (outcome === 'DONE') c.done += 1;
+  else if (outcome === 'DRIFTED') c.drifted += 1;
+  else c.noAnswer += 1;
 }
 
 /**
@@ -49,6 +65,40 @@ export function totals(
 }
 
 /**
+ * Outcome counts for Today and This_Week by the same end-timestamp rule as `totals()`,
+ * and for every record (`all`). Each record adds 1 to exactly one count (Req 6.3–6.6).
+ */
+export function outcomeCounts(
+  records: readonly Pick<SessionRecord, 'end' | 'outcome'>[],
+  now: number,
+): { today: Counts; week: Counts; all: Counts } {
+  const { dayStart, weekStart } = periodStarts(now);
+  const today = zero();
+  const week = zero();
+  const all = zero();
+  for (const r of records) {
+    add(all, r.outcome);
+    if (r.end > now) continue;
+    if (r.end >= weekStart) add(week, r.outcome);
+    if (r.end >= dayStart) add(today, r.outcome);
+  }
+  return { today, week, all };
+}
+
+// No-break spaces keep each label with its number and keep "·" on the line before a wrap,
+// so an Outcome_Count_Line can only wrap after a "·" (Req 6.2).
+const NB = '\u00a0';
+
+/** `DONE 1 · DRIFTED 0 · NO ANSWER 2`, with no-break spaces except after each "·". */
+export function countLine(c: Counts): string {
+  return [
+    `DONE${NB}${c.done}${NB}·`,
+    `DRIFTED${NB}${c.drifted}${NB}·`,
+    `NO${NB}ANSWER${NB}${c.noAnswer}`,
+  ].join(' ');
+}
+
+/**
  * Number the record and append it, keeping the newest MAX_HISTORY records (Req 13.1, 13.2, core 10.10).
  * Post_Numbers increase strictly and the oldest records go first, so the last record always holds
  * the largest number given out so far.
@@ -72,15 +122,20 @@ export function setOutcome(records: readonly SessionRecord[], start: number, out
 
 /**
  * Receipt values. `history` is the stored history after the record was appended.
- * When storage is unavailable, totals use only the current record (core Req 10.7).
+ * The just-ended Session is counted with its answered Outcome even if writing the answer
+ * failed (Req 6.3). When storage is unavailable, totals and counts use only the current
+ * record (core Req 10.7, Req 6.7).
  */
 export function buildReceipt(record: NewRecord, history: HistoryStatus, now: number): ReceiptModel {
   if (history.kind === 'unavailable') {
-    return { record, ...totals([record], now), notice: NOTICE_UNAVAILABLE };
+    const { today, week } = outcomeCounts([record], now);
+    return { record, ...totals([record], now), counts: { today, week }, notice: NOTICE_UNAVAILABLE };
   }
+  const { today, week } = outcomeCounts(setOutcome(history.records, record.start, record.outcome), now);
   return {
     record,
     ...totals(history.records, now),
+    counts: { today, week },
     notice: history.kind === 'reset' ? NOTICE_RESET : null,
   };
 }

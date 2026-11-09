@@ -371,7 +371,7 @@ export function buildReceipt(record: NewRecord, history: HistoryStatus, now: num
 ```
 
 - `outcomeCounts`: Today and This_Week use the `periodStarts` rule of `totals()` (`dayStart ≤ end ≤ now`, `weekStart ≤ end ≤ now`). `all` counts every record. Each Outcome increments its own field (Req 6.2–6.6).
-- `countLine(c: Counts): string` returns the Outcome_Count_Line `DONE 1 · DRIFTED 0 · NO ANSWER 2`, with U+00A0 (no-break space) between each label and its number and inside `NO ANSWER`, and ordinary spaces around `·`, so the line can only wrap at a separator (Req 6.2).
+- `countLine(c: Counts): string` returns the Outcome_Count_Line `DONE 1 · DRIFTED 0 · NO ANSWER 2`, with U+00A0 (no-break space) between each label and its number, inside `NO ANSWER`, and before each `·`; the only ordinary spaces come right after a `·`, so the line can only wrap after a separator (Req 6.2).
 - `appendRecord`: `[...records, { no: (records.at(-1)?.no ?? 0) + 1, ...r }].slice(-1000)` (Req 13.1, 13.2).
 - `setOutcome`: replaces the `outcome` of the newest record whose `start` equals `start`; returns the input unchanged if none matches. Count, order, numbers, and other fields stay the same (Req 8.8, 8.9).
 - `buildReceipt`: for `ok` and `reset`, counts are computed from `setOutcome(history.records, record.start, record.outcome)`, so the just-ended Session is counted with its answered Outcome even if the answer could not be written yet (Req 6.3). For `unavailable`, totals and counts use `[record]` only (Req 6.7). `totals()` is unchanged.
@@ -461,7 +461,7 @@ export const LEGACY_ACTIVE_KEY = 'blueline.active.v1';
 | `screens/menu.ts` | `4. BOARD` item; hint `PRESS 1-4, OR TYPE GO YT / GO IG`; the Duration_Menu back button reads `0. BACK`. |
 | `screens/session.ts` | `PURPOSE: <purpose or (NO PURPOSE)>` line under `CONNECTED TO <label>` (Req 1.9). |
 | `screens/nocarrier.ts` | When `ended.memo` is set: `MESSAGE FROM THE PAST` and the memo below the disconnect line, and the hint `PRESS ENTER OR TAP TO CONTINUE` (Req 4.1, 4.3). Mount key includes whether a memo is shown. |
-| `screens/receipt.ts` | Rows `PURPOSE` (label row, then the wrapped text) and `OUTCOME` (the Outcome_Label); directly under `TODAY` and under `THIS WEEK`, a row with the `countLine` text, indented to the value column and allowed to wrap at ` · ` (Req 6.1, 6.2). |
+| `screens/receipt.ts` | Rows `PURPOSE` (label row, then the wrapped text) and `OUTCOME` (the Outcome_Label); directly under `TODAY` and under `THIS WEEK`, a row with the `countLine` text, indented 2 columns (`.box-indent`) so it fits the 26-column width in two lines, and allowed to wrap only after a `·` (Req 6.1, 6.2). The Purpose row uses the same indent. |
 | `screens/box.ts` | `SIDE_TEXT` 8 → 12 lines. |
 | `screens/view.ts` | `Handlers` adds `purposeSubmit`, `memoSubmit`, `answer`, `page`, `typing`. |
 | `main.ts` | Routes the four new views. Hides the Command_Prompt form (`form.hidden = true`) on `purpose` and `memo`. Counts those views as "focus owned by the screen" in the focus-restore check. |

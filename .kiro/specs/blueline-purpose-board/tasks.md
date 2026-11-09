@@ -70,21 +70,21 @@ Conventions for every task:
     - With a fake `localStorage`: v2 preferred; v1 fallback; v1 never written; unreadable v2 → `reset`; storage that throws → `unavailable`.
     - _Requirements: 8.7, core 10.6, core 10.7_
 
-- [ ] 3. Outcome counts on the receipt
-  - [ ] 3.1 Add `outcomeCounts` and `countLine` to `src/core/history.ts`
+- [x] 3. Outcome counts on the receipt
+  - [x] 3.1 Add `outcomeCounts` and `countLine` to `src/core/history.ts`
     - Same end-timestamp rule as `totals()`. `countLine` uses no-break spaces inside each label-number pair and inside `NO ANSWER`.
     - `buildReceipt` adds `counts`, computed with `setOutcome(history.records, record.start, record.outcome)` for `ok`/`reset` and from `[record]` for `unavailable`.
     - Move code into a new `src/core/outcomes.ts` if `history.ts` would pass about 200 lines.
     - _Requirements: 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
-  - [ ] 3.2 Update `src/screens/receipt.ts` and `src/screens/box.ts`
+  - [x] 3.2 Update `src/screens/receipt.ts` and `src/screens/box.ts`
     - Rows `PURPOSE` (the Purpose or `(NO PURPOSE)`, wrapped) and `OUTCOME`, and a `countLine` row directly under `TODAY` and under `THIS WEEK`. Raise `SIDE_TEXT` from 8 to 12 lines. Set the Purpose with `textContent` only.
     - _Requirements: 6.1, 6.2, 11.3, 11.4_
-  - [ ] 3.3 Write property tests in `tests/property/outcomes.prop.test.ts`
+  - [x] 3.3 Write property tests in `tests/property/outcomes.prop.test.ts`
     - **Property 3: Outcome counts add up**
     - **Property 4: Week counts are at least today's counts**
     - Add this file to the `new-york` project in `vitest.config.ts`.
     - **Validates: Requirements 6.3, 6.4, 6.5, 6.6**
-  - [ ] 3.4 Write unit tests
+  - [x] 3.4 Write unit tests
     - `countLine` text and its no-break spaces; receipt counts with `unavailable` history use only the current Session.
     - _Requirements: 6.2, 6.7_
 
