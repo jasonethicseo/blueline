@@ -15,7 +15,8 @@ inclusion: always
 ├─ src/
 │  ├─ main.ts          app entry: boot, page layout, screen router
 │  ├─ app/             shell: owns app state, timers, DOM input, runs effects
-│  │  ├─ controller.ts dispatch loop, effect runner, session/NO CARRIER timers, visibility
+│  │  ├─ controller.ts dispatch loop, session/NO CARRIER timers, view model, visibility
+│  │  ├─ effects.ts    runs core effects through platform and audio wrappers
 │  │  └─ input.ts      keydown / click / prompt submit → core events
 │  ├─ core/            pure logic — no DOM, no browser APIs, no timers, `now` passed in
 │  │  ├─ config.ts     fee rate, durations, presets, aliases, timing constants

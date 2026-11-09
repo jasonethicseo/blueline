@@ -173,8 +173,8 @@ Conventions for every task:
     - Receipt box with destination, planned, actual, end reason, fee, today, this week, the fictional-currency statement, the optional storage notice, and `1. DIAL AGAIN`.
     - _Requirements: 7.8, 9.2, 9.7, 9.8, 10.6, 10.7_
 
-- [ ] 13. Shell
-  - [ ] 13.1 Implement `src/app/controller.ts`
+- [x] 13. Shell
+  - [x] 13.1 Implement `src/app/controller.ts`
     - Dispatch loop with each effect in its own try/catch; effect runner for every effect in the design table.
     - Dial timers (`HANDSHAKE_DONE` after 4 s, `SHOW_MENU` 800 ms later) that run whether or not audio started.
     - While CONNECTED: 250 ms `TICK` interval, a one-shot timeout at the scheduled end, and `TICK` on resume; title-flash stop on resume.
@@ -182,13 +182,13 @@ Conventions for every task:
     - `ViewModel` for screens (elapsed, remaining, fee, receipt model, help lines).
     - Session_Screen shown within 1 s of the session start; total controlled waits in the 1 MIN demo stay within 75 s (timing from `TIMING`).
     - _Requirements: 1.6, 1.9, 5.7, 6.2, 6.9, 6.12, 7.1, 13.3, 7.3, 7.5, 7.7, 7.9, 7.12, 7.13, 9.1, 10.8, 10.9_
-  - [ ] 13.2 Implement `src/app/input.ts`
+  - [x] 13.2 Implement `src/app/input.ts`
     - Digit keys on menu views and the confirm view handled as `MENU_KEY` when the prompt is empty; typed commands through `parseCommand` and the per-view table; prompt cleared and refocused after submit.
     - Enter with an empty prompt: `DIAL`, `DIAL_SKIP`, `CONFIRM`, or `NOCARRIER_DONE` by view.
     - Escape: `HANG_UP` in CONNECTED, `BACK` on the confirm view before the Connect step, ignored elsewhere.
     - `modem.unlock()` inside the dial gesture; the permission request inside the duration-pick gesture; `window.open` inside the confirm gesture; the popup link dispatches `LINK_OPENED`.
     - _Requirements: 1.3, 1.7, 3.9, 4.8, 5.1, 7.4, 8.1, 8.2, 8.8, 12.2, 12.3, 12.5, 12.7, 12.11, 12.12, 12.16, 13.4_
-  - [ ] 13.3 Wire `src/main.ts`
+  - [x] 13.3 Wire `src/main.ts`
     - Load the active session, run `recover`, run its effects, attach input, pick the screen by state, and render.
     - _Requirements: 1.1, 11.1, 11.3, 11.5, 14.3_
 

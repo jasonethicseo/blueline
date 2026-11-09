@@ -1,5 +1,6 @@
 // Command_Prompt parsing and per-screen command rules (Requirement 12). Pure.
 import { DURATIONS, type Alias } from './config';
+import type { AppState } from './session';
 
 export type Command =
   | { kind: 'number'; n: number }
@@ -17,6 +18,23 @@ export type ParseResult =
 /** The screens that have a Command_Prompt. */
 export type ViewName =
   | 'dial' | 'destination' | 'urlEntry' | 'duration' | 'confirm' | 'session' | 'nocarrier' | 'receipt';
+
+/** Which screen the state shows; decides accepted commands and key handling. */
+export function viewOf(state: AppState): ViewName {
+  switch (state.phase) {
+    case 'IDLE':
+    case 'DIALING':
+      return 'dial';
+    case 'SELECT_DEST':
+      return state.urlEntry ? 'urlEntry' : 'destination';
+    case 'SELECT_DURATION':
+      return state.confirm || state.pending ? 'confirm' : 'duration';
+    case 'CONNECTED':
+      return 'session';
+    case 'ENDED':
+      return state.ended?.view === 'receipt' ? 'receipt' : 'nocarrier';
+  }
+}
 
 export const MSG_UNKNOWN = 'UNKNOWN COMMAND - TYPE HELP';
 export const MSG_UNKNOWN_DESTINATION = 'UNKNOWN DESTINATION - TYPE HELP';
