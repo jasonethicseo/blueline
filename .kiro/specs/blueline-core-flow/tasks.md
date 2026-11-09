@@ -136,7 +136,7 @@ Conventions for every task:
     - `isVisible`, `onResume(cb)` for `visibilitychange` to visible, `pageshow`, and `focus`; `startTitleFlash` / `stopTitleFlash` alternating `NO CARRIER` and `BLUELINE` every second.
     - _Requirements: 6.9, 7.5, 7.12, 7.13_
 
-- [ ] 10. Modem sound
+- [x] 10. Modem sound
   - Implement `src/audio/modem.ts`: `unlock`, `handshake` (about 4 s: DTMF digits, 2100 Hz answer tone, 1200/2400 Hz tones, band-passed noise bursts), `noCarrier` (480 + 620 Hz busy pulses, ≤ 1.5 s), `stop` (20 ms gain ramp). All oscillators and generated noise; no audio files; every call in try/catch returning `false` on failure.
   - _Requirements: 1.5, 1.7, 1.9, 7.2, 7.11, 8.4_
 
