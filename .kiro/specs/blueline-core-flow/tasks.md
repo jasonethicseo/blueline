@@ -151,24 +151,24 @@ Conventions for every task:
     - Viewport meta, `<meta name="referrer" content="no-referrer">`, a screen root, the message line (`role="status" aria-live="polite"`), and the persistent Command_Prompt (`maxlength="32"`). Add a small Vite `transformIndexHtml` plugin in `vite.config.ts` that injects the CSP meta into the production build only.
     - _Requirements: 10.2, 12.1, 15.1_
 
-- [ ] 12. Screens
+- [x] 12. Screens
   - All screens: every BLUELINE-generated string is ALL-CAPS English (the Korean greeting excepted); user-entered text and Custom URLs are shown exactly as entered (Req 12.9).
-  - [ ] 12.1 Implement `src/screens/box.ts`
+  - [x] 12.1 Implement `src/screens/box.ts`
     - Builds ASCII boxes (`+`, `-`, `|`) as DOM rows; border characters in `aria-hidden` spans; content as text or `<button>`.
     - _Requirements: 2.1, 4.1, 9.2, 12.9, 15.1_
-  - [ ] 12.2 Implement `src/screens/dial.ts`
+  - [x] 12.2 Implement `src/screens/dial.ts`
     - `BLUELINE`, `어서 오세요 (WELCOME)`, `PRESS ENTER OR TAP TO DIAL`; during DIALING the typed `ATDT` text computed from the dial start timestamp (no tick counting) and `CONNECT`.
     - _Requirements: 1.1, 1.4, 1.6, 1.7, 1.10_
-  - [ ] 12.3 Implement `src/screens/menu.ts`
+  - [x] 12.3 Implement `src/screens/menu.ts`
     - Destination menu, URL entry (`ENTER URL:`, `maxlength="2048"`, focused), Duration menu with `₩40 PER STARTED MINUTE` and the fictional-currency label.
     - _Requirements: 2.1, 2.2, 2.4, 4.1, 4.2_
-  - [ ] 12.4 Implement `src/screens/confirm.ts`
+  - [x] 12.4 Implement `src/screens/confirm.ts`
     - Destination label, planned duration, `CONNECT? PRESS ENTER`, CONNECT button, `0 OR ESC: BACK`; after a blocked popup, `POPUP BLOCKED` with a focused `<a target="_blank" rel="noopener noreferrer">` link.
     - _Requirements: 4.7, 4.8, 5.5, 5.6, 13.4_
-  - [ ] 12.5 Implement `src/screens/session.ts`
+  - [x] 12.5 Implement `src/screens/session.ts`
     - Label, `ELAPSED`, `REMAINING`, `FEE ₩n (FICTIONAL)`, `TYPE BYE OR PRESS ESC TO HANG UP`, HANG UP button; meter with `role="timer"` and `aria-live="off"`.
     - _Requirements: 6.1, 6.8, 6.10_
-  - [ ] 12.6 Implement `src/screens/nocarrier.ts` and `src/screens/receipt.ts`
+  - [x] 12.6 Implement `src/screens/nocarrier.ts` and `src/screens/receipt.ts`
     - NO CARRIER with `SESSION TIME IS UP.` or `LINE DISCONNECTED.` and no claim about closing or blocking the destination.
     - Receipt box with destination, planned, actual, end reason, fee, today, this week, the fictional-currency statement, the optional storage notice, and `1. DIAL AGAIN`.
     - _Requirements: 7.8, 9.2, 9.7, 9.8, 10.6, 10.7_

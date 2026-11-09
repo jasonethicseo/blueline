@@ -29,6 +29,7 @@ inclusion: always
 │  │  ├─ record.ts     session record / active session types, serialize and parse
 │  │  └─ history.ts    aggregate receipts into today / this-week totals, 1000-record cap
 │  ├─ screens/         one file per screen; each exports render(root, state, view)
+│  │  ├─ view.ts       ViewModel / Handlers types and DOM helpers (mount by screen key, slots)
 │  │  ├─ box.ts        ASCII box DOM helper shared by screens
 │  │  ├─ dial.ts
 │  │  ├─ menu.ts       destination menu, URL entry, duration menu
