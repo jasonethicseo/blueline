@@ -119,20 +119,20 @@ Conventions for every task:
     - **Property 14: No URL reaches storage**
     - **Validates: Requirements 10.1, 11.1, 11.2, 11.3, 11.4, 11.5, 14.3**
 
-- [ ] 8. Checkpoint
+- [x] 8. Checkpoint
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 9. Platform wrappers
-  - [ ] 9.1 Implement `src/platform/storage.ts`
+- [x] 9. Platform wrappers
+  - [x] 9.1 Implement `src/platform/storage.ts`
     - `loadHistory(): HistoryStatus`, `saveHistory`, `loadActive`, `saveActive`, `clearActive`; every `localStorage` access in try/catch; keys `blueline.history.v1` and `blueline.active.v1`.
     - _Requirements: 10.1, 10.6, 10.7, 10.8, 10.9_
-  - [ ] 9.2 Implement `src/platform/open.ts`
+  - [x] 9.2 Implement `src/platform/open.ts`
     - `openInNewTab(url)`: `window.open(url, '_blank')`, `false` for `null` or a closed window, `w.opener = null` in try/catch.
     - _Requirements: 5.1, 5.2, 5.3, 5.5_
-  - [ ] 9.3 Implement `src/platform/notify.ts`
+  - [x] 9.3 Implement `src/platform/notify.ts`
     - `isSupported`, `permission`, `requestIfDefault` (promise and callback forms, not awaited), `show` returning `false` when the constructor throws.
     - _Requirements: 7.3, 7.4, 7.5_
-  - [ ] 9.4 Implement `src/platform/page.ts`
+  - [x] 9.4 Implement `src/platform/page.ts`
     - `isVisible`, `onResume(cb)` for `visibilitychange` to visible, `pageshow`, and `focus`; `startTitleFlash` / `stopTitleFlash` alternating `NO CARRIER` and `BLUELINE` every second.
     - _Requirements: 6.9, 7.5, 7.12, 7.13_
 
