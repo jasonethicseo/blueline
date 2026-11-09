@@ -14,19 +14,19 @@ Conventions for every task:
 
 ## Tasks
 
-- [ ] 1. Purpose and Message validation
-  - [ ] 1.1 Add constants to `src/core/config.ts`
+- [x] 1. Purpose and Message validation
+  - [x] 1.1 Add constants to `src/core/config.ts`
     - `MAX_PURPOSE = 60`, `MAX_MEMO = 120`, `BOARD_PAGE_SIZE = 20`, `NO_PURPOSE = '(NO PURPOSE)'`, `OUTCOME_LABEL`, `OUTCOME_SHORT`, `NARROW_MAX_PX = 599`. Leave `TIMING`, `DURATIONS`, `FEE_RATE`, and `MAX_HISTORY` unchanged.
     - _Requirements: 1.3, 2.4, 6.1, 7.3, 7.4, 12.2_
-  - [ ] 1.2 Create `src/core/purpose.ts`
+  - [x] 1.2 Create `src/core/purpose.ts`
     - `charCount` (code points), `validatePurpose`, `validateMemo`, `isStoredPurpose`, `isStoredMemo`, and the messages `PURPOSE REQUIRED`, `PURPOSE TOO LONG - MAX 60 CHARS`, `MESSAGE TOO LONG - MAX 120 CHARS`.
     - _Requirements: 1.2, 1.3, 1.4, 1.5, 2.2, 2.3, 2.4, 2.5_
-  - [ ] 1.3 Write property tests in `tests/property/purpose.prop.test.ts`
+  - [x] 1.3 Write property tests in `tests/property/purpose.prop.test.ts`
     - **Property 1: Purpose validation**
     - **Property 2: Message validation**
     - Generators mix Hangul, emoji, ASCII, U+3000, NBSP, and tabs.
     - **Validates: Requirements 1.2, 1.3, 1.4, 1.5, 1.6, 2.2, 2.3, 2.4, 2.5**
-  - [ ] 1.4 Write unit tests in `tests/unit/purpose.test.ts`
+  - [x] 1.4 Write unit tests in `tests/unit/purpose.test.ts`
     - 60 and 61 Hangul syllables, 120 and 121, an emoji counted as one Character, U+3000 trimmed, whitespace-only → `EMPTY`, empty Message → `null`.
     - _Requirements: 1.4, 1.5, 2.3, 2.5_
 

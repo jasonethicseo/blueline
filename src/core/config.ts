@@ -60,6 +60,25 @@ export const MAX_URL_LENGTH = 2048;
 export const MAX_PROMPT_LENGTH = 32;
 export const MAX_HISTORY = 1000;
 
+/** Longest Purpose and Message, in Characters (Unicode code points) after trimming (Req 1.3, 2.4). */
+export const MAX_PURPOSE = 60;
+export const MAX_MEMO = 120;
+
+/** Posts per Board_Page (Req 7.4). */
+export const BOARD_PAGE_SIZE = 20;
+
+/** Shown wherever a Purpose would be, for a Session_Record that has none (Req 1.9, 6.1, 7.3). */
+export const NO_PURPOSE = '(NO PURPOSE)';
+
+/** Outcome_Labels: the receipt and the Board at 600 px and wider (Req 6.1, 6.2, 7.3). */
+export const OUTCOME_LABEL = { DONE: 'DONE', DRIFTED: 'DRIFTED', 'NO ANSWER': 'NO ANSWER' } as const;
+
+/** Outcome_Short_Forms: the Board on a Narrow viewport only (Req 7.3). */
+export const OUTCOME_SHORT = { DONE: 'Y', DRIFTED: 'N', 'NO ANSWER': '?' } as const;
+
+/** Widest Narrow viewport in CSS px; crt.css uses the same number in its media query. */
+export const NARROW_MAX_PX = 599;
+
 export function durationBySeconds(seconds: number): DurationOption | undefined {
   return DURATIONS.find((d) => d.seconds === seconds);
 }
