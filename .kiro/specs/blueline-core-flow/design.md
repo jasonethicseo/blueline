@@ -246,13 +246,16 @@ export type Effect =
   | { type: 'openDestination'; url: string }
   | { type: 'requestNotifyPermission' }
   | { type: 'saveActive'; active: ActiveSession }
+  | { type: 'clearActive' }                           // unreadable or future active session on reload
   | { type: 'endSession'; record: SessionRecord }     // append record + clear active, before render
   | { type: 'notifyTimeUp' };                         // notification or title-flash fallback
 
 export function initialState(): AppState;
 export function step(state: AppState, event: Event): { state: AppState; effects: Effect[] };
+// src/core/session-end.ts (split out to keep files under 200 lines)
 export function endRecord(session: Session, reason: EndReason, now: number): SessionRecord;
-export function recover(active: ActiveSession | null, seq: number, now: number):
+// src/core/recover.ts — takes the raw stored text so "nothing stored" and "unreadable" differ
+export function recover(storedText: string | null, now: number, seq?: number):
   { state: AppState; effects: Effect[] };          // Req 11, Req 14.3
 ```
 

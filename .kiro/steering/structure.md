@@ -23,6 +23,8 @@ inclusion: always
 │  │  ├─ time.ts       elapsed / remaining, MM:SS format and parse
 │  │  ├─ url.ts        custom URL validation and normalization
 │  │  ├─ session.ts    state machine: IDLE → DIALING → SELECT_DEST → SELECT_DURATION → CONNECTED → ENDED
+│  │  ├─ session-end.ts end record and the ENDED state
+│  │  ├─ recover.ts    starting state after a reload, from the stored active session
 │  │  ├─ commands.ts   parse user input into actions
 │  │  ├─ record.ts     session record / active session types, serialize and parse
 │  │  └─ history.ts    aggregate receipts into today / this-week totals, 1000-record cap
