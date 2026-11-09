@@ -140,14 +140,14 @@ Conventions for every task:
   - Implement `src/audio/modem.ts`: `unlock`, `handshake` (about 4 s: DTMF digits, 2100 Hz answer tone, 1200/2400 Hz tones, band-passed noise bursts), `noCarrier` (480 + 620 Hz busy pulses, ≤ 1.5 s), `stop` (20 ms gain ramp). All oscillators and generated noise; no audio files; every call in try/catch returning `false` on failure.
   - _Requirements: 1.5, 1.7, 1.9, 7.2, 7.11, 8.4_
 
-- [ ] 11. Font, styles, and page shell
-  - [ ] 11.1 Add the bundled font
-    - Download the unmodified `GalmuriMono11.woff2` and `ofl.md` from the upstream quiple/galmuri release into `public/fonts/`. Record the release version in `public/fonts/README.md`.
+- [x] 11. Font, styles, and page shell
+  - [x] 11.1 Add the bundled font
+    - Download the unmodified `GalmuriMono11.woff2` and `OFL.txt` from the upstream quiple/galmuri release into `public/fonts/`. Record the release version in `public/fonts/README.md`.
     - _Requirements: 15.3, 15.4_
-  - [ ] 11.2 Write `src/styles/crt.css`
+  - [x] 11.2 Write `src/styles/crt.css`
     - `@font-face` for GalmuriMono11 from `/fonts/`; blue `#0000aa` background; `font-size: clamp(14px, 4vw, 22px)`; boxes at most 32 columns; buttons at least 44 × 44 px; scanlines and flicker only inside `@media (prefers-reduced-motion: no-preference)`.
     - _Requirements: 1.1, 12.8, 15.2, 15.3_
-  - [ ] 11.3 Write `index.html`
+  - [x] 11.3 Write `index.html`
     - Viewport meta, `<meta name="referrer" content="no-referrer">`, a screen root, the message line (`role="status" aria-live="polite"`), and the persistent Command_Prompt (`maxlength="32"`). Add a small Vite `transformIndexHtml` plugin in `vite.config.ts` that injects the CSP meta into the production build only.
     - _Requirements: 10.2, 12.1, 15.1_
 

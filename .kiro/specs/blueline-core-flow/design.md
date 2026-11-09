@@ -23,7 +23,7 @@ Because the reducer returns effects as data, requirements such as "end the sessi
 | Opening the destination | `window.open(url, '_blank')` called synchronously in the confirm key/tap handler, then `w.opener = null` | `window.open` with the `noopener` feature always returns `null`, which would hide popup blocking. Nulling the opener right after open keeps blocker detection and meets Req 5.3. `<meta name="referrer" content="no-referrer">` keeps the BLUELINE origin out of the destination's referrer. |
 | Popup fallback | `<a href target="_blank" rel="noopener noreferrer">` that receives focus | A real link is never popup-blocked and is reachable by keyboard (Req 13.4). |
 | Box drawing | Pure ASCII `+ - \|` characters, border characters `aria-hidden` | "ASCII box" in the requirements; avoids glyph-width issues with box-drawing characters; screen readers read only the content. |
-| Font | GalmuriMono11 (SIL OFL 1.1, no Reserved Font Name), unmodified upstream `.woff2` in `public/fonts/` with `ofl.md` | Monospace pixel font with Hangul. Shipping the unmodified file avoids any OFL "Modified Version" questions. |
+| Font | GalmuriMono11 (SIL OFL 1.1, no Reserved Font Name), unmodified upstream `.woff2` in `public/fonts/` with `OFL.txt` | Monospace pixel font with Hangul. Shipping the unmodified file avoids any OFL "Modified Version" questions. |
 | Storage format | JSON with a version field, two keys: `blueline.history.v1`, `blueline.active.v1` | Simple to validate; versioned for later changes. |
 
 ## Architecture
@@ -622,7 +622,7 @@ Neither shape has a URL field. The Custom URL lives only in `AppState.destinatio
 4. **Privacy**: no accounts, no server, no tracking; history and the active session stay in `localStorage` with no URLs.
 5. **Known limitations**: the three items above, including that on iPhone Safari the user sees NO CARRIER and the receipt when they come back to the BLUELINE tab.
 6. **Development**: `npm run dev`, `npm run build`, `npm test`; project layout from `structure.md`; how Kiro specs, steering, and hooks were used.
-7. **Credits and licenses**: MIT for the code; GalmuriMono11 under SIL OFL 1.1 with `public/fonts/ofl.md`; all sounds synthesized with Web Audio.
+7. **Credits and licenses**: MIT for the code; GalmuriMono11 under SIL OFL 1.1 with `public/fonts/OFL.txt`; all sounds synthesized with Web Audio.
 
 ## Resolved Decisions
 

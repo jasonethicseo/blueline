@@ -1,1 +1,233 @@
-/* CRT look for BLUELINE. Filled in task 11.2. */
+/* BLUELINE: 1990s PC-tongsin blue screen.
+   Class names used by src/screens/*:
+   .screen, .line, .title, .dim, .em, .box, .box-row, .box-side, .box-edge, .box-cell,
+   .item (menu button), .action (CONNECT / HANG UP button), .url-input, .meter, .notice */
+
+@font-face {
+  font-family: 'GalmuriMono11';
+  src: url('/fonts/GalmuriMono11.woff2') format('woff2');
+  font-display: block;
+}
+
+:root {
+  --bg: #0000aa;
+  --fg: #e8e8e8;
+  --dim: #9fa8ff;
+  --em: #ffff55;
+  --bar-bg: #aaaaaa;
+  --bar-fg: #0000aa;
+  --font: 'GalmuriMono11', ui-monospace, monospace;
+  --box-cols: 32;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+}
+
+body {
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: clamp(14px, 4vw, 22px);
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+#app {
+  max-width: 44rem;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 1rem 0.75rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-shadow: 0 0 0.25em rgb(200 210 255 / 0.35);
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.line {
+  margin: 0;
+  white-space: pre-wrap;
+  /* Long custom URLs wrap instead of scrolling sideways (Req 12.8). */
+  overflow-wrap: anywhere;
+}
+
+.title {
+  color: var(--em);
+}
+
+.dim {
+  color: var(--dim);
+}
+
+.em {
+  color: var(--em);
+}
+
+/* ASCII box: top/bottom edges are "+----+" text; sides are columns of "|" characters. */
+.box {
+  width: min(calc(var(--box-cols) * 1ch), 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.box-edge {
+  margin: 0;
+  white-space: pre;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.box-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.box-side {
+  flex: none;
+  width: 1ch;
+  white-space: pre;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.box-cell {
+  flex: 1;
+  min-width: 0;
+  padding: 0 1ch;
+  overflow-wrap: anywhere;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  margin: 0;
+  cursor: pointer;
+  text-shadow: inherit;
+}
+
+.item,
+.action {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 1ch;
+  text-align: left;
+}
+
+.item {
+  flex: 1;
+  width: 100%;
+}
+
+.action {
+  align-self: flex-start;
+  border: 1px solid currentColor;
+}
+
+.item:hover,
+.item:focus-visible,
+.action:hover,
+.action:focus-visible {
+  background: var(--bar-bg);
+  color: var(--bar-fg);
+  text-shadow: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--em);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--em);
+}
+
+.meter {
+  font-variant-numeric: tabular-nums;
+}
+
+.notice {
+  color: var(--em);
+}
+
+#message {
+  min-height: 1.5em;
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--em);
+}
+
+#prompt-form {
+  display: flex;
+  align-items: center;
+  gap: 1ch;
+  margin-top: auto;
+}
+
+#prompt,
+.url-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  /* iOS Safari zooms into inputs smaller than 16px. */
+  font: inherit;
+  font-size: max(16px, 1em);
+  color: inherit;
+  caret-color: var(--em);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--dim);
+  border-radius: 0;
+  outline-offset: 0;
+}
+
+.url-input {
+  width: 100%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* CRT effects only for users who have not asked for reduced motion (Req 15.2). */
+@media (prefers-reduced-motion: no-preference) {
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.18) 0 1px, transparent 1px 3px);
+  }
+
+  #app {
+    animation: flicker 4s steps(1) infinite;
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    47% { opacity: 0.96; }
+    48% { opacity: 1; }
+    83% { opacity: 0.98; }
+  }
+}

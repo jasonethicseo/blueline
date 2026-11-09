@@ -3,9 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#0000aa" />
+    <meta name="description" content="A 1990s dial-up connection gate for endless feeds. Fees are fictional." />
     <title>BLUELINE</title>
   </head>
   <body>
+    <main id="app">
+      <div id="screen" class="screen"></div>
+      <p id="message" role="status" aria-live="polite"></p>
+      <form id="prompt-form" autocomplete="off">
+        <label for="prompt"><span aria-hidden="true">&gt;</span><span class="sr-only">COMMAND</span></label>
+        <input
+          id="prompt"
+          name="prompt"
+          type="text"
+          maxlength="32"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          enterkeyhint="go"
+        />
+      </form>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
