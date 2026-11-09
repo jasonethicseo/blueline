@@ -1,7 +1,7 @@
 // Session_State_Machine (Requirement 14): a pure reducer that returns effects as data.
 import { PRESETS, ALIASES, durationByKey, type Alias, type PresetLabel } from './config';
 import { normalizeUrl } from './url';
-import type { ActiveSession, Label, SessionRecord } from './record';
+import type { ActiveSession, Label, NewRecord } from './record';
 import { endSession, reasonAt, scheduledEnd } from './session-end';
 
 export type Phase = 'IDLE' | 'DIALING' | 'SELECT_DEST' | 'SELECT_DURATION' | 'CONNECTED' | 'ENDED';
@@ -21,7 +21,7 @@ export interface AppState {
   pending: { plannedSec: number; blocked: boolean } | null;
   notifyAsked: boolean;
   session: Session | null;
-  ended: { record: SessionRecord; view: 'nocarrier' | 'receipt' } | null;
+  ended: { record: NewRecord; view: 'nocarrier' | 'receipt' } | null;
 }
 
 export type Event =
@@ -39,7 +39,7 @@ export type Effect =
   | { type: 'requestNotifyPermission' }
   | { type: 'saveActive'; active: ActiveSession }
   | { type: 'clearActive' }
-  | { type: 'endSession'; record: SessionRecord }
+  | { type: 'endSession'; record: NewRecord }
   | { type: 'notifyTimeUp' };
 
 export interface StepResult { state: AppState; effects: Effect[] }

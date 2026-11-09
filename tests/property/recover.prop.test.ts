@@ -5,6 +5,7 @@ import fc from 'fast-check';
 import { recover } from '../../src/core/recover';
 import { scheduledEnd } from '../../src/core/session-end';
 import { LABELS, serializeActive, serializeHistory } from '../../src/core/record';
+import { appendRecord } from '../../src/core/history';
 import { DURATIONS } from '../../src/core/config';
 import type { Event } from '../../src/core/session';
 import { BASE, effectsOf, replay } from './session-arb';
@@ -85,7 +86,7 @@ describe('Property 14: No URL reaches storage', () => {
             }
             if (e.type === 'endSession') {
               expect(JSON.stringify(e)).not.toContain(host);
-              expect(serializeHistory([e.record])).not.toContain(host);
+              expect(serializeHistory(appendRecord([], e.record))).not.toContain(host);
               expect(e.record.end).toBeLessThanOrEqual(scheduledEnd({ id: 1, start: BASE, plannedSec: e.record.plannedSec, label: 'CUSTOM' }));
             }
           }

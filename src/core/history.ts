@@ -1,6 +1,7 @@
-// Today / this-week totals, the 1000-record cap, and the receipt model. Pure: `now` is passed in.
+// Today / this-week totals, post numbers, the 1000-record cap, Outcome updates, and the
+// receipt model. Pure: `now` is passed in.
 import { MAX_HISTORY } from './config';
-import type { SessionRecord } from './record';
+import type { NewRecord, Outcome, SessionRecord } from './record';
 
 /** What the storage layer could read, as seen by the core. */
 export type HistoryStatus =
@@ -12,7 +13,7 @@ export const NOTICE_RESET = 'HISTORY RESET - STORED DATA UNREADABLE';
 export const NOTICE_UNAVAILABLE = 'HISTORY NOT SAVED - STORAGE UNAVAILABLE';
 
 export interface ReceiptModel {
-  record: SessionRecord;
+  record: NewRecord;
   today: number;
   week: number;
   notice: typeof NOTICE_RESET | typeof NOTICE_UNAVAILABLE | null;
@@ -31,8 +32,11 @@ export function periodStarts(now: number): { dayStart: number; weekStart: number
   return { dayStart: day.getTime(), weekStart: week.getTime() };
 }
 
-/** Sum of fees whose end falls in Today / This_Week, up to `now` (Req 9.3, 9.4). */
-export function totals(records: readonly SessionRecord[], now: number): { today: number; week: number } {
+/** Sum of fees whose end falls in Today / This_Week, up to `now` (core Req 9.3, 9.4). Unchanged by Req 8.4. */
+export function totals(
+  records: readonly Pick<SessionRecord, 'end' | 'fee'>[],
+  now: number,
+): { today: number; week: number } {
   const { dayStart, weekStart } = periodStarts(now);
   let today = 0;
   let week = 0;
@@ -44,16 +48,33 @@ export function totals(records: readonly SessionRecord[], now: number): { today:
   return { today, week };
 }
 
-/** Append a record and keep the newest MAX_HISTORY records (Req 10.10). */
-export function appendRecord(records: readonly SessionRecord[], r: SessionRecord): SessionRecord[] {
-  return [...records, r].slice(-MAX_HISTORY);
+/**
+ * Number the record and append it, keeping the newest MAX_HISTORY records (Req 13.1, 13.2, core 10.10).
+ * Post_Numbers increase strictly and the oldest records go first, so the last record always holds
+ * the largest number given out so far.
+ */
+export function appendRecord(records: readonly SessionRecord[], r: NewRecord): SessionRecord[] {
+  const no = (records.at(-1)?.no ?? 0) + 1;
+  // `no` last, so a stray `no` on the input can never override it.
+  return [...records, { ...r, no }].slice(-MAX_HISTORY);
+}
+
+/**
+ * Set the Outcome of the newest record whose start equals `start`. Count, order, Post_Numbers,
+ * and every other field stay the same; no match returns the records unchanged (Req 8.8, 8.9).
+ */
+export function setOutcome(records: readonly SessionRecord[], start: number, outcome: Outcome): SessionRecord[] {
+  let at = records.length - 1;
+  while (at >= 0 && records[at]?.start !== start) at -= 1;
+  if (at < 0) return [...records];
+  return records.map((r, i) => (i === at ? { ...r, outcome } : r));
 }
 
 /**
  * Receipt values. `history` is the stored history after the record was appended.
- * When storage is unavailable, totals use only the current record (Req 10.7).
+ * When storage is unavailable, totals use only the current record (core Req 10.7).
  */
-export function buildReceipt(record: SessionRecord, history: HistoryStatus, now: number): ReceiptModel {
+export function buildReceipt(record: NewRecord, history: HistoryStatus, now: number): ReceiptModel {
   if (history.kind === 'unavailable') {
     return { record, ...totals([record], now), notice: NOTICE_UNAVAILABLE };
   }

@@ -67,7 +67,7 @@ flowchart LR
     END[session-ended.ts<br/>nocarrier, check, receipt]
     BRD[board.ts<br/>board events, paging]
     PUR[purpose.ts<br/>validation]
-    REC[record.ts + record-legacy.ts]
+    REC[record.ts<br/>v2 write, v1 + v2 read]
     HIS[history.ts<br/>totals, counts, post numbers]
     CMD[commands.ts]
   end
@@ -335,26 +335,24 @@ export function boardStep(state: AppState, event: Event): StepResult;
 
 For `reset` and `unavailable` history the page model has no rows, and the screen shows `NO POSTS` with the notice (Req 7.8, 7.9). No board event returns an effect other than the initial `loadBoard` (Req 7.11).
 
-### `src/core/record.ts` and `src/core/record-legacy.ts` (changed / new)
+### `src/core/record.ts` (changed)
 
 ```ts
-// record.ts
 export function serializeHistory(records: readonly SessionRecord[]): string;   // {"v":2,...}
 export function parseHistory(text: string): { ok: true; records: SessionRecord[] } | { ok: false };
 export function serializeActive(a: ActiveSession): string;                      // {"v":2,...}
 export function parseActive(text: string): ActiveSession | null;
-// record-legacy.ts
-export function parseHistoryV1(data: Json): SessionRecord[] | null;   // numbered 1..n, purpose null, NO ANSWER
-export function parseActiveV1(data: Json): ActiveSession | null;      // purpose null, memo null
 ```
 
-`parseHistory` reads the `v` field: `1` → `parseHistoryV1`, `2` → the v2 reader, anything else → not ok.
+The v1 readers live in `record.ts` next to the v2 readers. They share the core-field check (`toCore`), and a separate `record-legacy.ts` would need that check from `record.ts` while `record.ts` needs the v1 reader from it, which is an import cycle. Split the file only if it grows past about 200 lines (changed during task 2).
+
+`parseHistory` reads the `v` field: `1` → the v1 reader (numbered 1..n, `purpose: null`, `NO ANSWER`), `2` → the v2 reader, anything else → not ok.
 
 The v1 reader keeps the exact core rules (missing field, unknown reason or label, `end < start` → the whole text is unreadable) and copies the seven core fields unchanged (Req 8.3, 8.4, 13.3).
 
 The v2 reader applies the same core rules plus: `no` is a positive safe integer and strictly greater than the previous record's `no`; `purpose` is `null` or passes `isStoredPurpose`; `outcome` is one of `OUTCOMES`. Any failure makes the whole text unreadable (Req 8.6, 13.6).
 
-`parseActive` reads `v`: `1` → `parseActiveV1`; `2` → the core checks plus `isStoredPurpose(purpose)` (required in v2) and `memo === null || isStoredMemo(memo)` (Req 9.4, 9.5).
+`parseActive` reads `v`: `1` → the v1 reader (`purpose: null`, `memo: null`); `2` → the core checks plus `isStoredPurpose(purpose)` (required in v2) and `memo === null || isStoredMemo(memo)` (Req 9.4, 9.5).
 
 ### `src/core/history.ts` (changed)
 
@@ -624,7 +622,7 @@ Each property test runs at least 100 fast-check cases and is tagged `// Feature:
 
 | Folder | New | Changed |
 |---|---|---|
-| `src/core/` | `purpose.ts`, `session-intent.ts`, `session-ended.ts`, `board.ts`, `record-legacy.ts` | `config.ts`, `session.ts`, `session-end.ts`, `record.ts`, `recover.ts`, `commands.ts`, `history.ts` |
+| `src/core/` | `purpose.ts`, `session-intent.ts`, `session-ended.ts`, `board.ts` | `config.ts`, `session.ts`, `session-end.ts`, `record.ts`, `recover.ts`, `commands.ts`, `history.ts` |
 | `src/app/` | `keys.ts` | `controller.ts`, `effects.ts`, `input.ts` |
 | `src/screens/` | `purpose.ts`, `check.ts`, `board.ts` | `menu.ts`, `session.ts`, `nocarrier.ts`, `receipt.ts`, `box.ts`, `view.ts` |
 | `src/platform/` | | `storage.ts` |

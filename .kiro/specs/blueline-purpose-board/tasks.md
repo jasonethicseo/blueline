@@ -30,42 +30,43 @@ Conventions for every task:
     - 60 and 61 Hangul syllables, 120 and 121, an emoji counted as one Character, U+3000 trimmed, whitespace-only → `EMPTY`, empty Message → `null`.
     - _Requirements: 1.4, 1.5, 2.3, 2.5_
 
-- [ ] 2. Stored history format v2, legacy records, and post numbers
-  - [ ] 2.1 Extend the record types in `src/core/record.ts`
+- [x] 2. Stored history format v2, legacy records, and post numbers
+  - [x] 2.1 Extend the record types in `src/core/record.ts`
     - `Outcome = 'DONE' | 'DRIFTED' | 'NO ANSWER'`, `OUTCOMES`, `SessionRecord` with `no`, `purpose`, `outcome`, and `NewRecord = Omit<SessionRecord, 'no'>`.
     - `serializeHistory` writes `{ v: 2, records }` with only the listed fields. `parseHistory` dispatches on `v`.
     - The v2 reader keeps every core rule and adds the checks for `no` (positive safe integer, strictly increasing), `purpose` (`null` or `isStoredPurpose`), and `outcome`.
     - Leave the Active_Session_State format unchanged in this task (it changes in task 4).
     - _Requirements: 8.1, 8.2, 8.5, 8.6, 13.6_
-  - [ ] 2.2 Create `src/core/record-legacy.ts`
-    - `parseHistoryV1`: the exact core v1 rules; numbers 1..n in stored order; `purpose: null`; `outcome: 'NO ANSWER'`; the seven core fields copied unchanged.
+  - [x] 2.2 Read format v1 history in `src/core/record.ts`
+    - Changed during the task: the v1 reader stays in `record.ts` (140 lines) instead of a new `record-legacy.ts`, because both readers share the core-field check and a split would create an import cycle.
+    - The v1 reader: the exact core v1 rules; numbers 1..n in stored order; `purpose: null`; `outcome: 'NO ANSWER'`; the seven core fields copied unchanged.
     - _Requirements: 8.3, 8.4, 13.3_
-  - [ ] 2.3 Update `src/core/history.ts` and `src/core/session-end.ts`
+  - [x] 2.3 Update `src/core/history.ts` and `src/core/session-end.ts`
     - `appendRecord(records, r: NewRecord)` sets `no = (last no ?? 0) + 1`, then keeps the newest 1000.
     - `setOutcome(records, start, outcome)` changes only the newest record with that `start`.
     - `endRecord` returns a `NewRecord` with `purpose: null` and `outcome: 'NO ANSWER'` for now (task 4 passes the real Purpose). `endSession` effect payloads use `NewRecord`.
     - `totals()` and `fee` stay unchanged.
     - _Requirements: 5.5, 8.8, 8.9, 13.1, 13.2, 13.7_
-  - [ ] 2.4 Update `src/platform/storage.ts` for the history keys
+  - [x] 2.4 Update `src/platform/storage.ts` for the history keys
     - Write `blueline.history.v2` only. Read v2 first and fall back to `blueline.history.v1` only when the v2 key is missing. Never write or remove the v1 history key. An unreadable v2 key gives `reset` with no fallback.
     - _Requirements: 8.7, design storage-key decision_
-  - [ ] 2.5 Update existing tests and generators for the new fields
+  - [x] 2.5 Update existing tests and generators for the new fields
     - `tests/property/arbitraries.ts` gains `no`, `purpose`, `outcome`, plus a v1-record generator. Update core Properties 12, 13, and 18 and `tests/unit/history.test.ts` so they check the new fields. Keep their original intent.
     - _Requirements: 8.5, 13.1_
-  - [ ] 2.6 Write property tests for formats in `tests/property/record.prop.test.ts`
+  - [x] 2.6 Write property tests for formats in `tests/property/record.prop.test.ts`
     - **Property 6: Legacy history keeps its totals**
     - **Property 7: v2 serialization round trip**
     - **Property 8: Bad v2 records make the whole text unreadable**
     - **Validates: Requirements 6.6, 8.3, 8.4, 8.5, 8.6, 8.7, 13.3, 13.6**
-  - [ ] 2.7 Write property tests for post numbers in `tests/property/history.prop.test.ts`
+  - [x] 2.7 Write property tests for post numbers in `tests/property/history.prop.test.ts`
     - **Property 9: Post numbers survive removal**
     - **Property 10: Post numbers are unique and increasing**
     - Include sequences that pass the 1000-record cap and start from an empty, a v1-parsed, and a v2 history.
     - **Validates: Requirements 13.1, 13.2, 13.4, 13.5, 13.7**
-  - [ ] 2.8 Write property test for `setOutcome` in `tests/property/outcomes.prop.test.ts`
+  - [x] 2.8 Write property test for `setOutcome` in `tests/property/outcomes.prop.test.ts`
     - **Property 11: Writing an answer changes one Outcome only**
     - **Validates: Requirements 8.8, 8.9**
-  - [ ] 2.9 Write unit tests for the history keys in `tests/unit/storage.test.ts`
+  - [x] 2.9 Write unit tests for the history keys in `tests/unit/storage.test.ts`
     - With a fake `localStorage`: v2 preferred; v1 fallback; v1 never written; unreadable v2 → `reset`; storage that throws → `unavailable`.
     - _Requirements: 8.7, core 10.6, core 10.7_
 
@@ -95,7 +96,7 @@ Conventions for every task:
     - `endRecord` takes `purpose` from the Session.
     - _Requirements: 1.1, 1.3, 1.4, 1.5, 1.7, 1.8, 2.3, 2.4, 2.5, 3.3, 3.4, 3.5, 9.1, 10.1, 10.2_
   - [ ] 4.2 Active_Session_State v2 and recovery
-    - `serializeActive` writes `{ v: 2, …, purpose, memo }`. `parseActive` reads v1 through `parseActiveV1` (`purpose: null`, `memo: null`) and checks v2 Purpose and memo. `recover` carries both into the Session.
+    - `serializeActive` writes `{ v: 2, …, purpose, memo }`. `parseActive` reads v1 with the v1 reader in `record.ts` (`purpose: null`, `memo: null`) and checks v2 Purpose and memo. `recover` carries both into the Session.
     - `storage.ts`: write `blueline.active.v2`, read v2 then v1, and have `clearActive` remove both keys.
     - _Requirements: 9.1, 9.2, 9.4, 9.5_
   - [ ] 4.3 Commands, keys, and the controller split
@@ -182,7 +183,7 @@ Conventions for every task:
 - [ ] 8. Checkpoint
   - Run `npm test` (both time-zone projects) and `npm run build`. Both must pass with no type errors.
   - Check that every file in `src/` is under about 200 lines and that `src/core` imports nothing from `app`, `screens`, `audio`, or `platform` and has no `Date.now()`, timers, or DOM access.
-  - Update `.kiro/steering/structure.md` with the new files (`core/purpose.ts`, `session-intent.ts`, `session-ended.ts`, `board.ts`, `record-legacy.ts`, `outcomes.ts` if created, `app/keys.ts`, `screens/purpose.ts`, `check.ts`, `board.ts`) and the new state list.
+  - Update `.kiro/steering/structure.md` with the new files (`core/purpose.ts`, `session-intent.ts`, `session-ended.ts`, `board.ts`, `outcomes.ts` if created, `app/keys.ts`, `screens/purpose.ts`, `check.ts`, `board.ts`) and the new state list.
   - Ask the user if questions come up before the manual checks.
   - _Requirements: 10.1, 12.2_
 

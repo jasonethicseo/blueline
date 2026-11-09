@@ -3,7 +3,10 @@
 import { parseHistory, serializeActive, serializeHistory, type ActiveSession, type SessionRecord } from '../core/record';
 import type { HistoryStatus } from '../core/history';
 
-export const HISTORY_KEY = 'blueline.history.v1';
+/** Written by this build (format v2). */
+export const HISTORY_KEY = 'blueline.history.v2';
+/** Written before the purpose-board feature. Read only when HISTORY_KEY is missing; never written or removed. */
+export const LEGACY_HISTORY_KEY = 'blueline.history.v1';
 export const ACTIVE_KEY = 'blueline.active.v1';
 
 /** The Storage object, or null when it is missing or access itself throws (e.g. blocked cookies). */
@@ -15,12 +18,16 @@ function store(): Storage | null {
   }
 }
 
-/** Read the history: ok (possibly empty), reset (unreadable text), or unavailable. */
+/**
+ * Read the history: ok (possibly empty), reset (unreadable text), or unavailable.
+ * The v2 key wins; the v1 key is read only when no v2 text exists. An unreadable v2 text is
+ * a reset, with no fallback to v1 (Req 8.7, core 10.6).
+ */
 export function loadHistory(): HistoryStatus {
   const s = store();
   if (!s) return { kind: 'unavailable' };
   try {
-    const text = s.getItem(HISTORY_KEY);
+    const text = s.getItem(HISTORY_KEY) ?? s.getItem(LEGACY_HISTORY_KEY);
     if (text === null) return { kind: 'ok', records: [] };
     const parsed = parseHistory(text);
     return parsed.ok ? { kind: 'ok', records: parsed.records } : { kind: 'reset', records: [] };

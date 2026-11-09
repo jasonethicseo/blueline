@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { NOTICE_RESET, NOTICE_UNAVAILABLE, buildReceipt, periodStarts } from '../../src/core/history';
-import type { SessionRecord } from '../../src/core/record';
+import type { NewRecord, SessionRecord } from '../../src/core/record';
 
 // Local-time constructors keep these checks valid in any time zone.
 const local = (y: number, m: number, d: number, h = 0, min = 0, s = 0) => new Date(y, m - 1, d, h, min, s).getTime();
@@ -34,11 +34,14 @@ describe('periodStarts', () => {
 
 describe('buildReceipt', () => {
   const now = local(2026, 11, 11, 20); // Wednesday
-  const rec = (end: number, fee: number): SessionRecord => ({
+  const rec = (end: number, fee: number): NewRecord => ({
     start: end - 60_000, end, plannedSec: 60, actualSec: 60, fee, reason: 'TIME UP', label: 'CUSTOM',
+    purpose: '강의 하나만', outcome: 'NO ANSWER',
   });
   const current = rec(now - 1000, 40);
-  const stored = [rec(local(2026, 11, 9, 10), 200), rec(local(2026, 11, 8, 10), 999), current];
+  const stored: SessionRecord[] = [rec(local(2026, 11, 9, 10), 200), rec(local(2026, 11, 8, 10), 999), current]
+    .map((r, i) => ({ ...r, no: i + 1 }));
+  const storedCurrent = stored.slice(-1);
 
   it('uses the stored history when it was read', () => {
     expect(buildReceipt(current, { kind: 'ok', records: stored }, now)).toEqual({
@@ -47,7 +50,7 @@ describe('buildReceipt', () => {
   });
 
   it('shows the reset notice after unreadable history', () => {
-    expect(buildReceipt(current, { kind: 'reset', records: [current] }, now)).toEqual({
+    expect(buildReceipt(current, { kind: 'reset', records: storedCurrent }, now)).toEqual({
       record: current, today: 40, week: 40, notice: NOTICE_RESET,
     });
   });

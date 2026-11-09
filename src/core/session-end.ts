@@ -1,7 +1,7 @@
 // Ending a Session: the Session_Record and the ENDED state (Req 7.6, 8.3, 9.1). Pure.
 import { fee } from './fee';
 import { elapsedSeconds } from './time';
-import type { EndReason, SessionRecord } from './record';
+import type { EndReason, NewRecord } from './record';
 import type { AppState, Effect, Session, StepResult } from './session';
 
 /** Wall-clock ms at which the Session reaches its Planned_Duration. */
@@ -13,8 +13,10 @@ export function scheduledEnd(session: Session): number {
  * The record for a Session that ends now.
  * TIME UP always uses the scheduled end, even if detected late (Req 7.6).
  * HANG UP uses the elapsed whole seconds; `end` is derived from them so end ≥ start (Req 8.3).
+ * Every record starts as NO ANSWER, so leaving before the Purpose check keeps that (Req 5.5).
+ * The Purpose comes from the Session once the Purpose_Screen exists (task 4); until then it is null.
  */
-export function endRecord(session: Session, reason: EndReason, now: number): SessionRecord {
+export function endRecord(session: Session, reason: EndReason, now: number): NewRecord {
   const { start, plannedSec, label } = session;
   const actualSec = reason === 'TIME UP' ? plannedSec : elapsedSeconds(start, now, plannedSec);
   return {
@@ -25,6 +27,8 @@ export function endRecord(session: Session, reason: EndReason, now: number): Ses
     fee: fee(actualSec),
     reason,
     label,
+    purpose: null,
+    outcome: 'NO ANSWER',
   };
 }
 
