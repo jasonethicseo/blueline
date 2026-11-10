@@ -15,25 +15,25 @@ Conventions for every task:
 
 ## Tasks
 
-- [ ] 1. Pure helpers for the new screens
-  - [ ] 1.1 Add the constants to `src/core/config.ts`
+- [x] 1. Pure helpers for the new screens
+  - [x] 1.1 Add the constants to `src/core/config.ts`
     - `HAUNT` (`normal` 60 s / 600 s, `demo` 10 s / 60 s), `DEMO_PLANNED_SEC`, `PROGRESS_CELLS`, `MODEM_LOG`, `CONNECT_TEXT`. `DIAL_TEXT` and `TIMING` stay.
     - _Requirements: 4.2, 7.3, 9.6, 9.7_
-  - [ ] 1.2 Create `src/core/haunt.ts`
+  - [x] 1.2 Create `src/core/haunt.ts`
     - `hauntTiming`, `shouldHaunt`, `hauntLevel`, `ghostLayout` (six fixed slots, `ceil(6 × level)` shown, opacity `base × level`, corruption picked by a hash of the Purpose, no randomness).
     - _Requirements: 9.1, 9.2, 9.5, 9.6_
-  - [ ] 1.3 Create `src/core/display.ts`
+  - [x] 1.3 Create `src/core/display.ts`
     - `progressCells`, `progressBar`, `formatWon` (thousands separators), `formatClock` (capped at 99:59), `modemLines`, `charCounter`.
     - _Requirements: 4.2, 5.2, 5.3, 6.2, 7.3, 8.2_
-  - [ ] 1.4 Create `src/core/summary.ts`
+  - [x] 1.4 Create `src/core/summary.ts`
     - `periods`, `lastDays`, `callerNumber`, `lastCall`, `todaySoFar`, `preview`, reusing `periodStarts`, `totals`, and `outcomeCounts`.
     - _Requirements: 4.4–4.7, 5.4, 7.4, 8.3, 8.4_
-  - [ ] 1.5 Write property tests
+  - [x] 1.5 Write property tests
     - **Property 1: Haunt level stays in range and never decreases** and **Property 2: Haunted only for a late return to a Time_Up with a Purpose** in `tests/property/haunt.prop.test.ts`.
     - **Property 5: Progress_Bar** and **Property 7: Number formats** in `tests/property/display.prop.test.ts`.
     - **Property 6: Summaries match the receipt rules** in `tests/property/summary.prop.test.ts`; add it to the `new-york` project.
     - **Validates: Requirements 4.4, 4.6, 5.4, 7.3, 8.2, 8.3, 9.1, 9.2, 9.3, 9.6, 9.7**
-  - [ ] 1.6 Write unit tests
+  - [x] 1.6 Write unit tests
     - `lastCall` (TODAY / YESTERDAY / date, `null` when empty), `ghostLayout` at levels 0, 0.5, 1 and the same layout twice, `modemLines` order and `CONNECT 2400` last, `charCounter` over the limit, `formatWon(1840)` = `₩1,840`.
     - _Requirements: 4.2, 4.5, 5.3, 9.5_
 

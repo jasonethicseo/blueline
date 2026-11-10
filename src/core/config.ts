@@ -41,6 +41,31 @@ export const ALIASES: Readonly<Record<Alias, PresetLabel>> = {
 /** Fictional dial number (10 digits). */
 export const DIAL_TEXT = 'ATDT 0145550199';
 
+/** Modem_Log lines (ms after the Dial_Sequence start). The ATDT line is typed from `at`; CONNECT comes with the end of the handshake. */
+export const MODEM_LOG = [
+  { at: 0, text: 'ATZ' },
+  { at: 300, text: 'OK' },
+  { at: 600, text: DIAL_TEXT },
+  { at: 1600, text: 'DIALING...' },
+  { at: 2400, text: 'RING... RING...' },
+] as const;
+export const CONNECT_TEXT = 'CONNECT 2400';
+
+/**
+ * Haunted line timing in seconds: Grace_Period (`graceSec`) and Haunt_Full_Time (`fullSec`),
+ * for a normal Session and for the 1 MIN (DEMO) Session (design Req 9.6, 9.7).
+ */
+export const HAUNT = {
+  normal: { graceSec: 60, fullSec: 600 },
+  demo: { graceSec: 10, fullSec: 60 },
+} as const;
+
+/** The 1 MIN (DEMO) Planned_Duration; it uses the `demo` Haunt timing. */
+export const DEMO_PLANNED_SEC = 60;
+
+/** Cells in the Session_Screen Progress_Bar. */
+export const PROGRESS_CELLS = 20;
+
 export const TIMING = {
   /** Delay between typed characters of DIAL_TEXT. */
   charMs: 60,
