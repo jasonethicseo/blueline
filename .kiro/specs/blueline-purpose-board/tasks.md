@@ -2,7 +2,7 @@
 
 ## Overview
 
-Build on the working core flow in small steps. Each task leaves the app building, `npm test` passing, and the core flow usable. The stored history format and post numbers come first, because every later screen reads them. Then the receipt counts, the Purpose and Message screens, the Message delivery, the Purpose check, and the Board. A checkpoint, manual browser checks, and the README come last.
+Build on the working core flow in small steps. Each task leaves the app building, `npm test` passing, and the core flow usable. The stored history format and post numbers come first, because every later screen reads them. Then the receipt counts, the Purpose and Message screens, the NO CARRIER screen with the Message and the Purpose check, and the Board. A checkpoint, manual browser checks, and the README come last.
 
 Conventions for every task:
 
@@ -122,86 +122,79 @@ Conventions for every task:
     - Back from the Message_Screen keeps the Purpose. Back from the Duration_Menu shows the earlier Message. `back`, `bye`, and `0` submitted in the Purpose_Field are accepted as Purpose text. Duration_Menu `help` lines.
     - _Requirements: 3.2, 3.4, 3.5, 11.2_
 
-- [ ] 5. Message delivery at NO CARRIER
-  - [ ] 5.1 Carry the memo into the ended state
-    - `endSession` sets `ended.memo = session.memo` and keeps `session.memo = null`. `NOCARRIER_DONE` sets `ended.memo = null`. A recovered expired Session shows its memo.
-    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 9.3_
-  - [ ] 5.2 Update `src/screens/nocarrier.ts` and the controller timer
-    - When `ended.memo` is set: `MESSAGE FROM THE PAST`, the Message as text, and `PRESS ENTER OR TAP TO CONTINUE`. The controller does not arm the 3 s timer while `ended.memo` is set.
-    - _Requirements: 4.1, 4.3, 4.6, 12.2_
-  - [ ] 5.3 Write property test in `tests/property/memo.prop.test.ts`
+- [ ] 5. NO CARRIER with the Message and the Purpose check (tasks 5 and 6 merged after review)
+  - [ ] 5.1 Carry the memo into the ended state and create `src/core/session-ended.ts`
+    - `endSession` sets `ended.memo = session.memo` and keeps `session.memo = null`. A recovered expired Session shows its memo.
+    - ENDED views are `nocarrier` and `receipt` only. With a Purpose: `ANSWER { yes }` sets `DONE` or `DRIFTED`, sets `memo = null`, moves to the receipt, and returns `saveOutcome`; `NOCARRIER_DONE` does nothing; digits → `PRESS Y OR N`. With no Purpose: `NOCARRIER_DONE` sets `memo = null` and moves to the receipt, as in the core spec. No backward transitions.
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.6, 5.7, 5.9, 5.12, 9.3, 10.3_
+  - [ ] 5.2 Effects, controller, commands, and input
+    - `saveOutcome` effect with `setOutcome`. `historyWritten` keeps a `reset` status through the answer write. A failed write → `unavailable`.
+    - The controller arms the 3 s NO CARRIER timer only for the `nocarrier` view (no Purpose).
+    - Commands: `word` kind for `y`, `yes`, `n`, `no`. `viewOf` returns `nocarrierCheck` for a NO_CARRIER_Screen with a Purpose. On `nocarrierCheck`, everything except these and `help` → `PRESS Y OR N`, including empty Enter. `help` lines for `nocarrierCheck`.
+    - `input.ts`: `y` and `n` keys and digits on `nocarrierCheck`. `keys.ts`: Escape on `nocarrierCheck` does nothing. Handlers gain `answer(yes)`.
+    - _Requirements: 5.2, 5.3, 5.4, 5.6, 5.8, 5.9, 5.11, 11.2, 12.2_
+  - [ ] 5.3 Update `src/screens/nocarrier.ts`
+    - Top to bottom: `NO CARRIER` and the disconnect line; `MESSAGE FROM THE PAST` and the Message (only with a Message); `PURPOSE:` and the Purpose, `PURPOSE ACHIEVED?`, and the `Y · YES (DONE)` and `N · NO (DRIFTED)` buttons (≥ 44 px), with a hint that leaving without an answer records NO ANSWER (only with a Purpose). With a Purpose, a tap outside the buttons does nothing. Without a Purpose, the core screen and its tap behavior stay. All user text as plain text.
+    - _Requirements: 4.1, 4.3, 5.1, 5.2, 5.9, 5.10, 11.3, 11.4_
+  - [ ] 5.4 Write property test in `tests/property/memo.prop.test.ts`
     - **Property 5: A Message is shown at most once**
-    - Model reloads with a fake storage map and `recover()`.
-    - **Validates: Requirements 4.4, 4.5, 9.6**
-  - [ ] 5.4 Write property test in `tests/property/record.prop.test.ts`
+    - Model reloads with a fake storage map and `recover()`. Include answers, `NOCARRIER_DONE` from a timer or a tap, and reloads before and after the answer.
+    - **Validates: Requirements 4.4, 4.5, 5.12, 9.6**
+  - [ ] 5.5 Write property tests in `tests/property/session.prop.test.ts` and `tests/property/outcomes.prop.test.ts`
+    - **Property 13: Ended screens move only forward, and ended is final**
+    - Update **Property 16** so the ENDED view changes follow the merged screen: with a Purpose only `ANSWER` leaves NO CARRIER, without one only `NOCARRIER_DONE`.
+    - Extend **Property 3** with a Session ended on the NO_CARRIER_Screen (answered Y, N, or not at all): the receipt counts still add up and count that Session once, under its Outcome.
+    - **Validates: Requirements 5.2, 5.3, 5.4, 5.5, 5.9, 6.3, 6.4, 10.2, 10.3, 10.6**
+  - [ ] 5.6 Write property test in `tests/property/record.prop.test.ts`
     - **Property 14: Storage holds no URL, and history holds no Message**
     - Replaces core Property 14.
     - **Validates: Requirements 4.4, 8.1, 8.2**
-  - [ ] 5.5 Write unit tests
-    - Message shown after a Hang_Up and after a Time_Up; no heading when there is no Message; no 3 s move-on while a Message is shown.
-    - _Requirements: 4.1, 4.3, 4.6_
+  - [ ] 5.7 Write unit tests
+    - The Message is shown after a Hang_Up and after a Time_Up; no heading without a Message. With a Purpose: no move-on after 3 s, on Enter, on a tap, or on Esc; only the first answer counts; `PRESS Y OR N` for Enter, digits, and other text. A Session recovered from a v1 active state asks nothing, moves on, and records NO ANSWER. The receipt shows the answered Outcome when `saveOutcome` fails. `HISTORY RESET` is still shown after the answer is saved.
+    - _Requirements: 4.1, 4.3, 5.2, 5.6, 5.7, 5.8, 5.9, 5.11, 13.7_
 
-- [ ] 6. Purpose check
-  - [ ] 6.1 Create `src/core/session-ended.ts`
-    - ENDED views `nocarrier → check → receipt` (skip `check` when the Purpose is `null`). `ANSWER { yes }` sets `DONE` or `DRIFTED`, moves to the receipt, and returns `saveOutcome`. Digits on `check` → `PRESS Y OR N`. No backward transitions.
-    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6, 5.7, 5.9, 10.3_
-  - [ ] 6.2 Effects, controller, commands, and input
-    - `saveOutcome` effect with `setOutcome`. `historyWritten` keeps a `reset` status through the answer write. A failed write → `unavailable`.
-    - Commands: `word` kind for `y`, `yes`, `n`, `no`. On `check`, everything except these and `help` → `PRESS Y OR N`, including empty Enter. Check `help` lines.
-    - `input.ts`: `y` and `n` keys on `check`. `keys.ts`: Escape on `check` does nothing.
-    - _Requirements: 5.3, 5.4, 5.6, 5.8, 5.11, 11.2_
-  - [ ] 6.3 Create `src/screens/check.ts`
-    - `PURPOSE:` and the Purpose, `PURPOSE ACHIEVED? Y/N`, `Y. YES (DONE)` and `N. NO (DRIFTED)` buttons (≥ 44 px). No auto-advance.
-    - _Requirements: 5.2, 5.10, 11.4_
-  - [ ] 6.4 Write property test in `tests/property/session.prop.test.ts`
-    - **Property 13: Ended screens move only forward, and ended is final**
-    - **Validates: Requirements 10.3, 10.6**
-  - [ ] 6.5 Write unit tests
-    - Only the first answer counts. Esc keeps the check view. A Session recovered from a v1 active state skips the check and records NO ANSWER. The receipt shows the answered Outcome when `saveOutcome` fails. `HISTORY RESET` is still shown after the answer is saved.
-    - _Requirements: 5.7, 5.8, 5.9, 5.11, 13.7_
-
-- [ ] 7. Board
-  - [ ] 7.1 Create `src/core/board.ts`
+- [ ] 6. Board
+  - [ ] 6.1 Create `src/core/board.ts`
     - `localDate`, `boardPage` (rows with `no`, `date`, `purpose`, `time`, `outcome`, `mark`), `boardStep` (`BOARD_LOADED`, `BOARD_PAGE`, back, digits).
     - _Requirements: 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.13_
-  - [ ] 7.2 Wire the Board into the menu, commands, effects, and input
+  - [ ] 6.2 Wire the Board into the menu, commands, effects, and input
     - `MENU_KEY 4` on the Destination_Menu → `board` + `loadBoard` effect → `BOARD_LOADED`. `toDestMenu` clears `board`.
     - Commands `n` and `p` on the Board, `4 - BOARD` in the Destination_Menu `help`, and the Board `help` lines. `input.ts`: `n`/`p` keys and digits on the Board. Escape on the Board → back.
     - _Requirements: 7.1, 7.2, 7.5, 7.6, 7.7, 7.11, 7.13, 11.2_
-  - [ ] 7.3 Create `src/screens/board.ts` and update `screens/menu.ts` and `crt.css`
+  - [ ] 6.3 Create `src/screens/board.ts` and update `screens/menu.ts` and `crt.css`
     - `4. BOARD` item and the hint `PRESS 1-4, OR TYPE GO YT / GO IG`.
     - Board title, `PAGE p/n`, the header, rows with `.mark-long` and `.mark-short`, `NO POSTS` and notices, and the `N. NEXT`, `P. PREV`, `0. BACK` buttons (≥ 44 px).
     - The grid shows one line per post at 600 px and wider. Below 600 px, the Purpose goes on a second line and only `Y`/`N`/`?` is shown. `overflow-wrap: anywhere`.
     - _Requirements: 7.1, 7.3, 7.8, 7.9, 7.10, 7.12, 11.3, 11.4, 11.5_
-  - [ ] 7.4 Write property test in `tests/property/board.prop.test.ts`
+  - [ ] 6.4 Write property test in `tests/property/board.prop.test.ts`
     - **Property 12: Board pages cover the history**
     - Add this file to the `new-york` project in `vitest.config.ts`.
     - **Validates: Requirements 7.3, 7.4**
-  - [ ] 7.5 Write unit tests
+  - [ ] 6.5 Write unit tests
     - Empty history → `PAGE 1/1` and `NO POSTS`. 21 records → 2 pages. `NO MORE PAGES` at both ends. Digits 1–9 → `INVALID SELECTION`. `reset` and `unavailable` notices. Opening and paging return no effects other than `loadBoard`. `n` on the Destination_Menu → `COMMAND NOT AVAILABLE HERE - TYPE HELP`.
     - _Requirements: 7.5, 7.6, 7.8, 7.9, 7.11, 7.13_
 
-- [ ] 8. Checkpoint
+- [ ] 7. Checkpoint
   - Run `npm test` (both time-zone projects) and `npm run build`. Both must pass with no type errors.
   - Check that every file in `src/` is under about 200 lines and that `src/core` imports nothing from `app`, `screens`, `audio`, or `platform` and has no `Date.now()`, timers, or DOM access.
-  - Update `.kiro/steering/structure.md` with the new files (`core/purpose.ts`, `session-intent.ts`, `session-ended.ts`, `board.ts`, `outcomes.ts` if created, `app/keys.ts`, `screens/purpose.ts`, `check.ts`, `board.ts`) and the new state list.
+  - Update `.kiro/steering/structure.md` with the new files (`core/purpose.ts`, `session-state.ts`, `session-intent.ts`, `session-ended.ts`, `board.ts`, `outcomes.ts` if created, `app/keys.ts`, `screens/purpose.ts`, `board.ts`) and the new state list.
   - Ask the user if questions come up before the manual checks.
   - _Requirements: 10.1, 12.2_
 
-- [ ] 9. Manual checks and browser check
-  - [ ] 9.1 Add part C to `docs/manual-checks.md`
+- [ ] 8. Manual checks and browser check
+  - [ ] 8.1 Add part C to `docs/manual-checks.md`
     - Hangul IME on macOS Chrome, macOS Safari, and iPhone Safari: a Purpose ending in a composing syllable is submitted once with the last syllable, and Esc while composing does not go back.
-    - 360 px with a 60-Hangul Purpose (Session_Screen, check, receipt, Board) and a 120-Hangul Message (NO CARRIER): no horizontal scroll. The Board shows `Y`/`N`/`?` below 600 px and the words at 600 px and wider. The receipt count lines wrap only at ` · `.
-    - The Message after a hidden-tab Time_Up, after a Hang_Up, and after a reload past the end; not again after a reload on the receipt.
+    - 360 px with a 60-Hangul Purpose (Session_Screen, NO CARRIER with the check, receipt, Board) and a 120-Hangul Message (NO CARRIER): no horizontal scroll. The Board shows `Y`/`N`/`?` below 600 px and the words at 600 px and wider. The receipt count lines wrap only at ` · `.
+    - The Message and the Purpose check after a hidden-tab Time_Up, after a Hang_Up, and after a reload past the end; the NO CARRIER screen waits for Y or N; the Message is not shown again after a reload on NO CARRIER or on the receipt, and an unanswered Session stays NO ANSWER.
     - Legacy data: put v1 history and v1 active text in `localStorage`, reload, and check the Board numbers, `(NO PURPOSE)`, NO ANSWER, and unchanged totals.
     - The full 1 MIN demo under 150 s. DevTools Network shows no request on the new screens.
     - Before writing this part, ask the user which devices are available for the IME check.
     - _Requirements: 3.6, 3.7, 4.2, 4.5, 7.10, 8.4, 11.4, 11.7, 12.1_
-  - [ ] 9.2 Run a headless browser check of the new flow
-    - With the same approach as the core flow check: dial → Purpose → Message → 1 MIN → connect → NO CARRIER with a Message → Y → receipt → Board, under a fake clock. Record the results in `docs/manual-checks.md`.
-    - _Requirements: 4.1, 5.3, 6.2, 7.2, 12.1_
+  - [ ] 8.2 Run a headless browser check of the new flow
+    - With the same approach as the core flow check: dial → Purpose → Message → 1 MIN → connect → NO CARRIER with the Message and the Purpose check → Y → receipt → Board, under a fake clock. Record the results in `docs/manual-checks.md`.
+    - _Requirements: 4.1, 5.1, 5.3, 6.2, 7.2, 12.1_
 
-- [ ] 10. README
+- [ ] 9. README
   - **Moved to the README task of the last spec (마지막 스펙의 README 태스크로 옮김). Not done in this spec.**
   - Update `README.md` (or write it, if core task 16 has not run yet): the new flow, the 150 s demo path with a short Purpose, what is stored (Purpose and Outcome in history; Message only until the Session ends; no URL), the Board and its post numbers, and the v1 → v2 storage keys.
   - _Requirements: 8.1, 12.1_

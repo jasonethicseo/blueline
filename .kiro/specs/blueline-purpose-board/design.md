@@ -4,7 +4,7 @@
 
 This design adds the purpose-board feature (`requirements.md` in this folder) to the existing BLUELINE app. The new flow is:
 
-Dial → Destination → **Purpose** → **Message** → Duration → Connect confirm → Session → NO CARRIER (**with the Message**) → **Purpose check** → Receipt (**with Purpose, Outcome, and Outcome counts**)
+Dial → Destination → **Purpose** → **Message** → Duration → Connect confirm → Session → NO CARRIER (**with the Message and the Purpose check**) → Receipt (**with Purpose, Outcome, and Outcome counts**)
 
 and, from the Destination_Menu, `4. BOARD` → Board → back to the Destination_Menu.
 
@@ -25,7 +25,7 @@ The reducer still returns effects as data: `step(state, event) → { state, effe
 | Outcome | `outcome`: `'DONE' \| 'DRIFTED' \| 'NO ANSWER'` | Same words as the requirements and the screens, so stored values, code, and UI use one term each. |
 | Post_Number | `no` | Short field name in stored JSON. |
 | Purpose_Screen / Message_Screen | views `purpose` / `memo` | |
-| Purpose_Check_Screen | view `check` | |
+| NO_CARRIER_Screen with the Purpose_Check | view `nocarrierCheck` (Session has a Purpose); view `nocarrier` (no Purpose) | Both are drawn by `screens/nocarrier.ts`; the view name decides commands, keys, and the timer. |
 | Board_Screen | view `board` | |
 
 ### Key design decisions
@@ -33,9 +33,9 @@ The reducer still returns effects as data: `step(state, event) → { state, effe
 | Decision | Choice | Reason |
 |---|---|---|
 | Message shown at most once | The memo lives only in the Active_Session_State and in memory (`Session.memo`, then `ended.memo`). Ending a Session clears the Active_Session_State (existing `endSession` effect) and moves the memo from `session` to `ended.memo`. `NOCARRIER_DONE` sets `ended.memo = null`. ENDED views only move forward. `SessionRecord` has no memo field. | After the one NO CARRIER view, no copy of the memo is left in state or storage, so no later event or reload can show it again (Req 4.4, 4.5). |
-| NO CARRIER with a Message | The controller does not arm the 3 s `NOCARRIER_DONE` timer while `state.ended.memo` is set. Enter or a tap moves on. | A 120-Character Message needs reading time (Req 4.6). It also cannot be skipped by a timer while the tab is hidden. |
+| NO CARRIER and the Purpose check | One screen. With a Purpose, the ENDED `nocarrier` view leaves only on `ANSWER`; `NOCARRIER_DONE` is ignored, and the controller arms no 3 s timer. Without a Purpose, `NOCARRIER_DONE` moves on as in the core spec. | Decided in review after task 4. Answering right at the disconnect needs one fewer step, and waiting for the answer gives a Message time to be read. Ignoring `NOCARRIER_DONE` in the reducer also covers a stray timer or tap (Req 5.1, 5.2, 5.9). |
 | Outcome before the answer | `endRecord` creates the record with `outcome: 'NO ANSWER'`, and the existing `endSession` effect writes it before NO CARRIER is shown. | A reload, a closed tab, or a crash before the answer leaves NO ANSWER in storage without any extra write (Req 5.5). |
-| Writing the answer | `ANSWER { yes }` sets `ended.record.outcome`, moves to the receipt view, and returns `saveOutcome { start, outcome }`. The effect runner loads history, calls the pure `setOutcome(records, start, outcome)`, saves, and reports the result through `host.historyWritten`. | Keeps the write in the shell and the logic pure. Matching by `start` works because the ended state does not know the Post_Number, and two Sessions cannot share a start timestamp (each comes from a separate open). Only the first answer counts, because the view leaves `check` (Req 5.7, 8.9). |
+| Writing the answer | `ANSWER { yes }` sets `ended.record.outcome`, moves to the receipt view, and returns `saveOutcome { start, outcome }`. The effect runner loads history, calls the pure `setOutcome(records, start, outcome)`, saves, and reports the result through `host.historyWritten`. | Keeps the write in the shell and the logic pure. Matching by `start` works because the ended state does not know the Post_Number, and two Sessions cannot share a start timestamp (each comes from a separate open). Only the first answer counts, because the view leaves `nocarrier` (Req 5.7, 8.9). |
 | Post numbers | Stored per record as `no`. `appendRecord(records, r)` sets `no = (last record's no ?? 0) + 1`, then keeps the newest 1000. v1 history is numbered 1..n on read. v2 parsing rejects the whole text unless every `no` is a positive safe integer and the numbers increase strictly in stored order. | Numbers increase strictly, and the cap removes the oldest records first, so the last record always holds the largest number ever given out. No separate counter is needed (Req 13.1–13.6). A reset history starts again at 1 (Req 13.7). |
 | Outcome counts | New pure `outcomeCounts(records, now)` uses the same end-timestamp rule as `totals()`. `totals()` and `fee` are not changed. | Fee and time totals for legacy records stay identical because the code that computes them does not change (Req 8.4). |
 | Board loading | `MENU_KEY 4` sets `board = { page: 1, history: null }` and returns `loadBoard`. The effect runner calls `storage.loadHistory()` and queues `BOARD_LOADED { history }` in the same call stack, like `openDestination` → `OPENED`. | The reducer stays pure, and the Board is never rendered before the history arrives. The Board never writes (Req 7.11). |
@@ -54,7 +54,7 @@ The reducer still returns effects as data: `step(state, event) → { state, effe
 flowchart LR
   subgraph Edges
     IN[app/input.ts<br/>keydown, click, prompt submit]
-    SCR[screens/*<br/>purpose, check, board + existing]
+    SCR[screens/*<br/>purpose, board + existing]
     PLAT[platform/storage.ts<br/>v2 keys, v1 fallback]
   end
   subgraph Shell
@@ -65,7 +65,7 @@ flowchart LR
   subgraph Core [src/core - pure]
     SES[session.ts<br/>step]
     INT[session-intent.ts<br/>SET_PURPOSE]
-    END[session-ended.ts<br/>nocarrier, check, receipt]
+    END[session-ended.ts<br/>nocarrier + check, receipt]
     BRD[board.ts<br/>board events, paging]
     PUR[purpose.ts<br/>validation]
     REC[record.ts<br/>v2 write, v1 + v2 read]
@@ -111,14 +111,13 @@ stateDiagram-v2
   SELECT_DURATION --> CONNECTED: CONFIRM → OPENED / LINK_OPENED
   CONNECTED --> ENDED: TIME UP / HANG UP
   state ENDED {
-    nocarrier --> check: NOCARRIER_DONE (purpose set)
+    nocarrier --> receipt: ANSWER (purpose set)
     nocarrier --> receipt: NOCARRIER_DONE (no purpose)
-    check --> receipt: ANSWER
   }
   ENDED --> IDLE: DIAL_AGAIN (receipt view)
 ```
 
-Any event not listed for the current phase and view returns the same state and no effects. There is no transition from `check` or `receipt` back to `nocarrier`, or from `receipt` back to `check` (Req 10.3).
+Any event not listed for the current phase and view returns the same state and no effects. There is no transition from `receipt` back to `nocarrier` (Req 10.3).
 
 ### Timing plan for the 1 MIN demo (Req 12)
 
@@ -135,11 +134,10 @@ The BLUELINE-controlled waits are the same as in the core design. `TIMING` in `s
 | Enter on the Connect_Confirm_Screen | user | ≤ 5 s |
 | Session | BLUELINE | 60 s |
 | Time_Up detection + final `00:00` frame | BLUELINE | ≤ 0.75 s |
-| NO CARRIER with no Message | BLUELINE | 3 s |
-| Press Y or N | user | ≤ 5 s |
-| **Total** | | **≈ 103.7 s** (35 s user + 68.7 s BLUELINE; limit 150 s) |
+| Press Y or N on the NO_CARRIER_Screen | user | ≤ 5 s |
+| **Total** | | **≈ 100.7 s** (35 s user + 65.7 s BLUELINE; limit 150 s) |
 
-The demo uses no Message, so the 3 s NO CARRIER timer still runs. With a Message, NO CARRIER waits for the user (Req 4.6), which is user time, not a BLUELINE-controlled wait.
+The NO_CARRIER_Screen of a Session with a Purpose waits for Y or N (Req 5.2), which is user time, so the core 3 s NO CARRIER wait drops out of the BLUELINE-controlled waits.
 
 ## Data Models
 
@@ -182,7 +180,7 @@ export interface AppState {
   board: Board | null;               // SELECT_DEST only; non-null while the Board_Screen is shown
   ended: {
     record: NewRecord;               // outcome changes once, on ANSWER
-    view: 'nocarrier' | 'check' | 'receipt';
+    view: 'nocarrier' | 'receipt';
     memo: string | null;             // set only while view === 'nocarrier'
   } | null;
 }
@@ -298,13 +296,14 @@ No other event changes the state. In particular, no event here returns `requestN
 
 | View | Event | Result |
 |---|---|---|
-| nocarrier | `NOCARRIER_DONE` | `memo = null`; `view = 'check'` if `record.purpose !== null`, else `'receipt'` (Req 5.1, 5.9) |
-| check | `ANSWER { yes }` | `record.outcome = yes ? 'DONE' : 'DRIFTED'`, `view = 'receipt'`, effect `saveOutcome { start, outcome }` (Req 5.3, 5.4) |
-| check | `MENU_KEY` (any digit) | message `PRESS Y OR N` (Req 5.6) |
+| nocarrier, Purpose set | `ANSWER { yes }` | `record.outcome = yes ? 'DONE' : 'DRIFTED'`, `memo = null`, `view = 'receipt'`, effect `saveOutcome { start, outcome }` (Req 5.3, 5.4) |
+| nocarrier, Purpose set | `NOCARRIER_DONE` | no change: the screen waits for the answer (Req 5.2) |
+| nocarrier, Purpose set | `MENU_KEY` (any digit) | message `PRESS Y OR N` (Req 5.6) |
+| nocarrier, no Purpose | `NOCARRIER_DONE` | `memo = null`, `view = 'receipt'` (Req 5.9, core Req 7.7) |
 | receipt | `DIAL_AGAIN` or `MENU_KEY 1` | `initialState(seq)` (core Req 9.9) |
 | receipt | other `MENU_KEY` | `INVALID SELECTION` (core Req 9.11) |
 
-`ANSWER` in any other view, and every end event (`TICK`, `HANG_UP`), returns the same state and no effects (Req 5.7, core Req 8.7).
+`ANSWER` with no Purpose or in the receipt view, and every end event (`TICK`, `HANG_UP`), returns the same state and no effects (Req 5.7, core Req 8.7).
 
 ### `src/core/board.ts` (new)
 
@@ -385,17 +384,18 @@ Same decisions as the core design. The recovered `Session` takes `purpose` and `
 
 ```ts
 export type Command = /* existing */ | { kind: 'word'; word: 'y' | 'yes' | 'n' | 'no' | 'p' };
-export type ViewName = /* existing */ | 'purpose' | 'memo' | 'board' | 'check';
+export type ViewName = /* existing */ | 'purpose' | 'memo' | 'board' | 'nocarrierCheck';
 ```
 
-`viewOf`: `SELECT_DEST` → `board` when `state.board` is set, else `urlEntry` / `destination`; `SET_PURPOSE` → `state.textStep`; `ENDED` → `ended.view` (`nocarrier`, `check`, `receipt`).
+`viewOf`: `SELECT_DEST` → `board` when `state.board` is set, else `urlEntry` / `destination`; `SET_PURPOSE` → `state.textStep`; `ENDED` → `receipt`, or for the `nocarrier` view `nocarrierCheck` when `record.purpose` is set and `nocarrier` when it is null.
 
 | View | Accepted | Other input |
 |---|---|---|
 | Destination menu | numbers (1–4 act), `go yt`, `go ig`, `help` | as core |
 | Duration menu | numbers (0 → Message_Screen), `back` (→ Message_Screen), `help` | as core |
 | Board | `n`, `p`, numbers (0 back, 1–9 `INVALID SELECTION`), `back`, `help` | `COMMAND NOT AVAILABLE HERE - TYPE HELP` |
-| Purpose check | `y`, `yes`, `n`, `no`, `help` | everything else, including empty Enter, digits, unknown text, and other Commands → `PRESS Y OR N` (Req 5.6) |
+| NO CARRIER with the Purpose check (`nocarrierCheck`) | `y`, `yes`, `n`, `no`, `help` | everything else, including empty Enter, digits, unknown text, and other Commands → `PRESS Y OR N` (Req 5.6) |
+| NO CARRIER with no Purpose (`nocarrier`) | as core: `help`; empty Enter shows the receipt | as core |
 | Purpose, Message | no Command_Prompt; the field text is never parsed (Req 3.2) | |
 
 The new words are `COMMAND NOT AVAILABLE HERE - TYPE HELP` on every other screen (before this change `n` was `UNKNOWN COMMAND`).
@@ -405,7 +405,7 @@ The new words are `COMMAND NOT AVAILABLE HERE - TYPE HELP` on every other screen
 - Destination menu adds `4 - BOARD`.
 - Duration menu: `0 - BACK (MESSAGE)`, `BACK - MESSAGE SCREEN`.
 - Board: `N - NEXT (OLDER) PAGE`, `P - PREV (NEWER) PAGE`, `0 - BACK`, `ESC - BACK`, `BACK - MAIN MENU`, `HELP - SHOW COMMANDS`.
-- Purpose check: `Y - YES (DONE)`, `N - NO (DRIFTED)`, `HELP - SHOW COMMANDS`.
+- NO CARRIER with the Purpose check: `Y - YES (DONE)`, `N - NO (DRIFTED)`, `HELP - SHOW COMMANDS`.
 
 ### `src/app/controller.ts` and `src/app/keys.ts` (changed / new)
 
@@ -413,16 +413,16 @@ The new words are `COMMAND NOT AVAILABLE HERE - TYPE HELP` on every other screen
 
 Controller changes:
 
-- **NO CARRIER timer** (`paint`): arm the 3 s timer only when `state.ended.view === 'nocarrier'`, `state.ended.memo === null`, the final frame is over, and the tab is visible (Req 4.6).
+- **NO CARRIER timer** (`paint`): arm the 3 s timer only when the view is `nocarrier` (no Purpose), the final frame is over, and the tab is visible (Req 5.2, 5.9).
 - **historyWritten**: `history = prev?.kind === 'reset' && h.kind === 'ok' ? { kind: 'reset', records: h.records } : h`. The `HISTORY RESET` notice survives the `saveOutcome` write, which would otherwise read the freshly written history as `ok`.
 - **Receipt model** (`sync`): built when the view becomes `receipt`, from `ended.record` (with the answered Outcome) and `history`. Because effects run before `sync`, the `saveOutcome` result is already in `history`.
 - **Handlers** add `purposeSubmit(text)`, `memoSubmit(text)`, `answer(yes)`, `page(dir)`, `typing()`.
 
 `keys.ts`:
 
-- `enter()`: `check` → message `PRESS Y OR N`; other views as today.
-- `submit(text)`: `word` Commands map to `ANSWER` on `check` and to `BOARD_PAGE` on `board`; `check` overrides every non-`help`, non-yes/no result with `PRESS Y OR N`.
-- `escape()`: `session` → hang up; `confirm` (not pending) → back; `purpose`, `memo`, `board` → back; `check` → nothing (Req 5.11); other views → nothing.
+- `enter()`: `nocarrierCheck` → message `PRESS Y OR N`; other views as today.
+- `submit(text)`: `word` Commands map to `ANSWER` on `nocarrierCheck` and to `BOARD_PAGE` on `board`; `nocarrierCheck` overrides every non-`help`, non-yes/no result with `PRESS Y OR N`.
+- `escape()`: `session` → hang up; `confirm` (not pending) → back; `purpose`, `memo`, `board` → back; `nocarrierCheck` → nothing (Req 5.11); other views → nothing.
 
 ### `src/app/effects.ts` (changed)
 
@@ -435,8 +435,8 @@ Controller changes:
 ### `src/app/input.ts` (changed)
 
 - Global guard: return early when `e.isComposing || e.keyCode === 229`, so Escape and Enter during composition go to the IME (Req 3.6).
-- `DIGIT_VIEWS` adds `board` and `check`.
-- Letter keys: on `board`, `n` and `p` (any case) → `page('next' | 'prev')`; on `check`, `y` and `n` (any case) → `answer(true | false)`. Same "not typing" rule as digits: only when focus is not in a text input, or is in the empty Command_Prompt (Req 5.3, 5.4, 7.5, 7.6).
+- `DIGIT_VIEWS` adds `board` and `nocarrierCheck`.
+- Letter keys: on `board`, `n` and `p` (any case) → `page('next' | 'prev')`; on `nocarrierCheck`, `y` and `n` (any case) → `answer(true | false)`. Same "not typing" rule as digits: only when focus is not in a text input, or is in the empty Command_Prompt (Req 5.3, 5.4, 7.5, 7.6).
 - Text fields: focus is in a non-prompt `<input>`, so digit and letter shortcuts never fire there (Req 3.1).
 
 ### `src/platform/storage.ts` (changed)
@@ -457,15 +457,15 @@ export const LEGACY_ACTIVE_KEY = 'blueline.active.v1';
 | File | Change |
 |---|---|
 | `screens/purpose.ts` (new) | Purpose_Screen and Message_Screen. Heading, labeled `<input type="text">` with `autocomplete="off"`, `enterkeyhint="next"`, no `maxLength`, value from `state.intent` when rebuilt; hint line (`ENTER TO CONTINUE. ESC OR BACK TO RETURN.` / `LEAVE EMPTY AND PRESS ENTER TO SKIP`); `BACK` button via `item()`. The field is in a `<form>`; `submit` sends `input.value` once unless the Enter that caused it was a composing key press. `input` event → `typing()`. Escape is left to `input.ts`. Mount keys `purpose` and `memo`. Focus the field in a microtask after mount, as the URL entry does. |
-| `screens/check.ts` (new) | `PURPOSE:` + the Purpose, `PURPOSE ACHIEVED? Y/N`, `Y. YES (DONE)` and `N. NO (DRIFTED)` buttons (≥ 44 px). |
+| `screens/check.ts` (new) | Not created: the Purpose check is part of `screens/nocarrier.ts` (changed in review after task 4). |
 | `screens/board.ts` (new) | `BOARD` title, `PAGE p/n`, header `NO. DATE TIME OUTCOME PURPOSE`, rows, `NO POSTS` and the notice when empty, `N. NEXT`, `P. PREV`, `0. BACK` buttons. Each row has the Outcome twice, a `.mark-long` span with the Outcome_Label and a `.mark-short` span with the Outcome_Short_Form; CSS shows exactly one of them, and the hidden one uses `display: none`, so screen readers read one. Mount key `board:<page>:<loaded>`. |
 | `screens/menu.ts` | `4. BOARD` item; hint `PRESS 1-4, OR TYPE GO YT / GO IG`; the Duration_Menu back button reads `0. BACK`. |
 | `screens/session.ts` | `PURPOSE: <purpose or (NO PURPOSE)>` line under `CONNECTED TO <label>` (Req 1.9). |
-| `screens/nocarrier.ts` | When `ended.memo` is set: `MESSAGE FROM THE PAST` and the memo below the disconnect line, and the hint `PRESS ENTER OR TAP TO CONTINUE` (Req 4.1, 4.3). Mount key includes whether a memo is shown. |
+| `screens/nocarrier.ts` | One screen, top to bottom: `NO CARRIER` and the disconnect line; when `ended.memo` is set, `MESSAGE FROM THE PAST` and the memo; when the Purpose is set, `PURPOSE:` + the Purpose, `PURPOSE ACHIEVED?`, and the `Y · YES (DONE)` and `N · NO (DRIFTED)` buttons (≥ 44 px), with the hint `LEAVING WITHOUT AN ANSWER RECORDS NO ANSWER`. With a Purpose, a tap outside the buttons does nothing; without one, the screen keeps the core hint and a tap moves on (Req 4.1, 4.3, 5.1, 5.2, 5.9). |
 | `screens/receipt.ts` | Rows `PURPOSE` (label row, then the wrapped text) and `OUTCOME` (the Outcome_Label); directly under `TODAY` and under `THIS WEEK`, a row with the `countLine` text, indented 2 columns (`.box-indent`) so it fits the 26-column width in two lines, and allowed to wrap only after a `·` (Req 6.1, 6.2). The Purpose row uses the same indent. |
 | `screens/box.ts` | `SIDE_TEXT` 8 → 12 lines. |
 | `screens/view.ts` | `Handlers` adds `purposeSubmit`, `memoSubmit`, `answer`, `page`, `typing`. |
-| `main.ts` | Routes the four new views. Hides the Command_Prompt form (`form.hidden = true`) on `purpose` and `memo`. Counts those views as "focus owned by the screen" in the focus-restore check. |
+| `main.ts` | Routes the new views (`nocarrierCheck` goes to `screens/nocarrier.ts`). Hides the Command_Prompt form (`form.hidden = true`) on `purpose` and `memo`. Counts those views as "focus owned by the screen" in the focus-restore check. |
 | `styles/crt.css` | `.text-field` full width; `.board-row` grid (`NO DATE TIME OUTCOME PURPOSE` on one line at ≥ 600 px with `.mark-long`; below 600 px, `.mark-short` and the Purpose on a second line); `overflow-wrap: anywhere` on Purpose, Message, and board rows, so 360 px has no horizontal page scroll (Req 7.3, 7.10, 11.4). |
 
 ## Correctness Properties
@@ -488,7 +488,7 @@ Each property test runs at least 100 fast-check cases and is tagged `// Feature:
 
 ### Property 3: Outcome counts add up
 
-*For any* history of 0–1000 records with random Outcomes and end timestamps, and any `now`, for each of Today, This_Week, and the whole history, `done + drifted + noAnswer` equals the number of records in that period, using a reference filter on `end`.
+*For any* history of 0–1000 records with random Outcomes and end timestamps, and any `now`, for each of Today, This_Week, and the whole history, `done + drifted + noAnswer` equals the number of records in that period, using a reference filter on `end`. Also, *for any* stored history and any ending of a Session on the NO_CARRIER_Screen (answered Y, answered N, or left unanswered), the receipt counts built from the history after `endSession` and `saveOutcome` add up to the number of records in each period, count the ended Session exactly once, and count it under its answered Outcome or under NO ANSWER.
 
 **Validates: Requirements 6.3, 6.4, 6.6**
 
@@ -500,7 +500,7 @@ Each property test runs at least 100 fast-check cases and is tagged `// Feature:
 
 ### Property 5: A Message is shown at most once
 
-*For any* Session with a memo and any sequence of `TICK`, `HANG_UP`, `NOCARRIER_DONE`, `ANSWER`, `MENU_KEY`, `DIAL_AGAIN` events, hidden/visible switches, and reloads, the number of states in which `ended.view === 'nocarrier'` and `ended.memo` equals that memo, counted once per entry into that view, is at most 1 per session start. A reload is modelled with a fake storage map: `saveActive` writes it, `endSession` clears it, and a reload replaces the state with `recover(storedActive, now)`.
+*For any* Session with a memo and any sequence of `TICK`, `HANG_UP`, `NOCARRIER_DONE`, `ANSWER`, `MENU_KEY`, `DIAL_AGAIN` events, hidden/visible switches, and reloads, the number of states in which `ended.view === 'nocarrier'` and `ended.memo` equals that memo, counted once per entry into that view, is at most 1 per session start, and once the receipt view is reached for that Session no later state shows the memo. A reload is modelled with a fake storage map: `saveActive` writes it, `endSession` clears it, and a reload replaces the state with `recover(storedActive, now)`.
 
 **Validates: Requirements 4.4, 4.5, 9.6**
 
@@ -548,7 +548,7 @@ Each property test runs at least 100 fast-check cases and is tagged `// Feature:
 
 ### Property 13: Ended screens move only forward, and ended is final
 
-*For any* reachable ENDED state and any event sequence, the view sequence for that Session is a prefix of `nocarrier → check → receipt` (or `nocarrier → receipt` when the Purpose is `null`), and no later state is CONNECTED with the ended Session's id. Any later CONNECTED state has a larger id and its own start.
+*For any* reachable ENDED state and any event sequence, the view sequence for that Session is `nocarrier` then possibly `receipt`; with a Purpose, the step into `receipt` is always an `ANSWER` and the record's Outcome is then DONE or DRIFTED; with no Purpose it is always `NOCARRIER_DONE` and the Outcome stays NO ANSWER. No later state is CONNECTED with the ended Session's id; any later CONNECTED state has a larger id and its own start.
 
 **Validates: Requirements 10.3, 10.6**
 
@@ -579,7 +579,7 @@ Each property test runs at least 100 fast-check cases and is tagged `// Feature:
 | History was reset (unreadable) | `endSession` writes a new v2 history numbered from 1; the controller keeps the `reset` status through `saveOutcome`, so the receipt shows `HISTORY RESET`. | 13.7, core 10.6 |
 | Board with unreadable or unavailable storage | `NO POSTS` with the matching notice; no write. | 7.9 |
 | Invalid v2 active session (bad Purpose or memo) | Treated as invalid: cleared, Dial_Screen, history unchanged. | 9.5 |
-| Valid v1 active session | Recovered with `purpose = null`, `memo = null`; the Purpose check is skipped; NO ANSWER. | 5.9, 9.4 |
+| Valid v1 active session | Recovered with `purpose = null`, `memo = null`; its NO_CARRIER_Screen asks nothing and moves on as in the core spec; NO ANSWER. | 5.9, 9.4 |
 | IME Enter that only commits composition | Ignored; the next Enter submits. | 3.6, 3.7 |
 | Audio, popup, notification failures | Unchanged from the core design. | core 1.9, 5.5, 7.5 |
 
@@ -596,19 +596,19 @@ Each property test runs at least 100 fast-check cases and is tagged `// Feature:
   - `session.prop.test.ts`: Properties 13, 15, 16 (core Properties 7, 8, 9, 16, 17 are updated for the new phase and views)
   - `memo.prop.test.ts`: Property 5
   - `recover.prop.test.ts`: core Property 15 updated for v1 and v2 active text
-- **Existing generators**: `tests/property/arbitraries.ts` and `session-arb.ts` gain `no`, `purpose`, `outcome`, `memo`, and paths through `SET_PURPOSE`, the Board, and the check view.
+- **Existing generators**: `tests/property/arbitraries.ts` and `session-arb.ts` gain `no`, `purpose`, `outcome`, `memo`, and paths through `SET_PURPOSE`, the Board, and the NO_CARRIER_Screen with and without a Purpose.
 - **Unit tests** (`tests/unit/`):
   - Purpose and Message boundaries: 60 and 61 Hangul syllables, 120 and 121, emoji counted as one, U+3000 trimmed, whitespace-only → `PURPOSE REQUIRED`.
-  - Command parser: `y`, `YES`, ` n `, `No`, `p`; `n` on the Destination_Menu → `COMMAND NOT AVAILABLE HERE - TYPE HELP`; check view turns empty Enter, `5`, `bye`, and `xyz` into `PRESS Y OR N`.
-  - `help` lines for the Destination_Menu, Duration_Menu, Board, and check view.
+  - Command parser: `y`, `YES`, ` n `, `No`, `p`; `n` on the Destination_Menu → `COMMAND NOT AVAILABLE HERE - TYPE HELP`; the NO CARRIER check view turns empty Enter, `5`, `bye`, and `xyz` into `PRESS Y OR N`.
+  - `help` lines for the Destination_Menu, Duration_Menu, Board, and the NO CARRIER check view.
   - Board: empty history → `PAGE 1/1`, `NO POSTS`; 21 records → 2 pages; `NO MORE PAGES` at both ends; digits 1–9 → `INVALID SELECTION`.
-  - Only the first answer counts; Esc on the check view does nothing.
+  - Only the first answer counts; Esc and `NOCARRIER_DONE` (timer or tap) on the NO CARRIER check view do nothing.
   - Receipt: answered Outcome counted when `saveOutcome` failed; `HISTORY RESET` kept after `saveOutcome`.
   - `countLine`: `DONE 1 · DRIFTED 0 · NO ANSWER 2`, with no-break spaces only inside each label-number pair.
   - Storage keys: v2 preferred, v1 fallback, v1 history never written, both active keys cleared (with a fake `localStorage`).
 - **Manual checks** (`docs/manual-checks.md`, new part C):
   - Hangul IME: macOS Chrome and Safari, and iPhone Safari. Type a Purpose ending in a composing syllable and press Enter: submitted once, last syllable kept. Esc while composing does not go back.
-  - 360 px viewport with a 60-Hangul Purpose (Session_Screen, check, receipt, Board) and a 120-Hangul Message (NO CARRIER): no horizontal scroll. The Board shows `Y`/`N`/`?` below 600 px and the words at 600 px and wider; the receipt count lines wrap only at ` · `.
+  - 360 px viewport with a 60-Hangul Purpose (Session_Screen, NO CARRIER with the check, receipt, Board) and a 120-Hangul Message (NO CARRIER): no horizontal scroll. The Board shows `Y`/`N`/`?` below 600 px and the words at 600 px and wider; the receipt count lines wrap only at ` · `.
   - Message shown after a hidden-tab Time_Up, after a Hang_Up, and after a reload past the end; not shown again after a reload on the receipt.
   - The full demo flow under 150 s with the 1 MIN duration.
   - DevTools Network: no request during the new screens.
@@ -625,7 +625,7 @@ Each property test runs at least 100 fast-check cases and is tagged `// Feature:
 |---|---|---|
 | `src/core/` | `purpose.ts`, `session-state.ts`, `session-intent.ts`, `session-ended.ts`, `board.ts` | `config.ts`, `session.ts`, `session-end.ts`, `record.ts`, `recover.ts`, `commands.ts`, `history.ts` |
 | `src/app/` | `keys.ts` | `controller.ts`, `effects.ts`, `input.ts` |
-| `src/screens/` | `purpose.ts`, `check.ts`, `board.ts` | `menu.ts`, `session.ts`, `nocarrier.ts`, `receipt.ts`, `box.ts`, `view.ts` |
+| `src/screens/` | `purpose.ts`, `board.ts` | `menu.ts`, `session.ts`, `nocarrier.ts`, `receipt.ts`, `box.ts`, `view.ts` |
 | `src/platform/` | | `storage.ts` |
 | `src/` | | `main.ts`, `styles/crt.css` |
 | `tests/` | `purpose`, `outcomes`, `board`, `memo` property tests; unit tests above | existing generators and core property tests listed above; `vitest.config.ts` |

@@ -6,7 +6,7 @@ This feature turns BLUELINE from an app that only opens a link into an app that 
 
 - a required one-line Purpose, entered after the Destination is chosen and before the Planned_Duration is chosen;
 - an optional Message to the user's future self, shown when the Session ends;
-- a `PURPOSE ACHIEVED? Y/N` check between the NO_CARRIER_Screen and the Receipt_Screen;
+- a `PURPOSE ACHIEVED?` check on the NO_CARRIER_Screen, answered before the Receipt_Screen;
 - a Board that lists past Sessions like a BBS post list, each with a fixed post number;
 - Purpose and Outcome on the Receipt_Screen, and Outcome counts in the Today and This_Week totals.
 
@@ -21,7 +21,7 @@ This spec builds on `.kiro/specs/blueline-core-flow/requirements.md` (the core s
 | 2.1, 2.5 | The Destination_Menu has a fourth choice, `4. BOARD`. Digit 4 is no longer `INVALID SELECTION`. | Requirement 7 |
 | 2.3, 3.7 | Selecting a Destination displays the Purpose_Screen instead of the Duration_Menu. | Requirement 1 |
 | 6.1 | The Session_Screen also shows the Session's Purpose. | Requirement 1 |
-| 7.7, 8.5 | The NO_CARRIER_Screen leads to the Purpose_Check_Screen, and then to the Receipt_Screen. | Requirements 4, 5 |
+| 7.7, 8.5 | For a Session with a Purpose, the NO_CARRIER_Screen also asks `PURPOSE ACHIEVED?` and waits for Y or N before the Receipt_Screen, instead of moving on after 3 seconds or on Enter. A Session with no Purpose keeps the core rule. | Requirements 4, 5 |
 | 9.2 | The Receipt_Screen also shows the Purpose, the Outcome, and Outcome counts. | Requirement 6 |
 | 10.1, 10.3, 10.4, 10.5, 10.8 | The stored formats gain Purpose, Outcome, Post_Number, and Message fields, and old-format data is still read. | Requirements 8, 13 |
 | 10.10 | Removing the oldest records keeps the Post_Numbers of the records that remain. | Requirement 13 |
@@ -44,7 +44,7 @@ Terms defined in the core spec keep their meaning unless changed here.
 - **Message_Screen**: The screen shown after a Purpose is accepted. The Message_Screen shows the heading `MESSAGE TO FUTURE YOU`, a single-line text field labeled `MESSAGE:` (the Message_Field), the hint `LEAVE EMPTY AND PRESS ENTER TO SKIP`, and a BACK button.
 - **Text_Field**: The Purpose_Field or the Message_Field.
 - **Message_Delivery**: The display of a Session's Message on the NO_CARRIER_Screen under the heading `MESSAGE FROM THE PAST`.
-- **Purpose_Check_Screen**: The screen shown after the NO_CARRIER_Screen and before the Receipt_Screen. The Purpose_Check_Screen shows the Session's Purpose, the question `PURPOSE ACHIEVED? Y/N`, a YES button, and a NO button.
+- **Purpose_Check**: The part of the NO_CARRIER_Screen that shows the Session's Purpose, the question `PURPOSE ACHIEVED?`, a `Y · YES (DONE)` button, and an `N · NO (DRIFTED)` button. It is shown only for a Session that has a Purpose. See Requirement 5.
 - **Outcome**: The user's answer about a Session's Purpose: DONE (the user answered yes), DRIFTED (the user answered no), or NO ANSWER. The Outcome_Labels are the words `DONE`, `DRIFTED`, and `NO ANSWER`. The Outcome_Short_Forms are `Y`, `N`, and `?`, used only where a narrow viewport leaves no room for the Outcome_Labels.
 - **Outcome_Count_Line**: The text that shows the number of Session_Records with each Outcome in one period, in the form `DONE <n> · DRIFTED <n> · NO ANSWER <n>` (for example `DONE 1 · DRIFTED 0 · NO ANSWER 2`).
 - **Narrow viewport**: A viewport less than 600 CSS pixels wide.
@@ -56,7 +56,7 @@ Terms defined in the core spec keep their meaning unless changed here.
 - **Legacy_Record**: A Session_Record stored in the history format written before this feature (format version 1). A Legacy_Record has no Purpose and no Outcome field.
 - **Legacy_Active_State**: An Active_Session_State stored in format version 1, with no Purpose and no Message.
 - **No_Purpose_Label**: The text `(NO PURPOSE)`, shown wherever a Purpose would be shown for a Session_Record that has no Purpose.
-- **Session_State** (extended): One of the seven states IDLE, DIALING, SELECT_DEST, SET_PURPOSE, SELECT_DURATION, CONNECTED, and ENDED. SELECT_DEST covers the Destination_Menu, the URL entry field, and the Board_Screen. SET_PURPOSE covers the Purpose_Screen and the Message_Screen. ENDED covers the NO_CARRIER_Screen, the Purpose_Check_Screen, and the Receipt_Screen.
+- **Session_State** (extended): One of the seven states IDLE, DIALING, SELECT_DEST, SET_PURPOSE, SELECT_DURATION, CONNECTED, and ENDED. SELECT_DEST covers the Destination_Menu, the URL entry field, and the Board_Screen. SET_PURPOSE covers the Purpose_Screen and the Message_Screen. ENDED covers the NO_CARRIER_Screen (with the Purpose_Check) and the Receipt_Screen.
 
 ## Requirements
 
@@ -115,25 +115,26 @@ Terms defined in the core spec keep their meaning unless changed here.
 3. WHEN a Session that has no Message ends, THE NO_CARRIER_Screen SHALL display no `MESSAGE FROM THE PAST` heading.
 4. WHEN a Session ends, THE BLUELINE SHALL remove the Message from local storage together with the Active_Session_State, before the NO_CARRIER_Screen is displayed, so that the Message is not stored anywhere after the Session ends.
 5. THE BLUELINE SHALL perform at most one Message_Delivery per Session. FOR ALL sequences of user inputs, Time_Up and Hang_Up events, tab visibility changes, and reloads of the BLUELINE tab, THE BLUELINE SHALL display a given Session's Message on at most one NO_CARRIER_Screen (at-most-once property).
-6. WHILE the NO_CARRIER_Screen shows a Message, THE BLUELINE SHALL keep the NO_CARRIER_Screen on screen until the user presses Enter or taps the NO_CARRIER_Screen, instead of moving on after 3 seconds. WHILE the NO_CARRIER_Screen shows no Message, the core spec 3-second rule applies.
+6. THE BLUELINE SHALL show the Message only while the NO_CARRIER_Screen for that Session is displayed. Requirement 5 defines when the NO_CARRIER_Screen moves on.
 
-### Requirement 5: Purpose Check
+### Requirement 5: Purpose Check on the NO_CARRIER_Screen
 
-**User Story:** As a feed-app user, I want to say whether I did what I came for, so that I can look back honestly on each session.
+**User Story:** As a feed-app user, I want to say whether I did what I came for right when the line drops, so that I can look back honestly on each session.
 
 #### Acceptance Criteria
 
-1. WHEN the user leaves the NO_CARRIER_Screen as defined in core Requirement 7 criterion 7 and Requirement 4 criterion 6, THE BLUELINE SHALL display the Purpose_Check_Screen instead of the Receipt_Screen.
-2. THE Purpose_Check_Screen SHALL display the Session's Purpose, the question `PURPOSE ACHIEVED? Y/N`, a YES button, and a NO button, and SHALL NOT move on by itself after any amount of time.
-3. WHEN the user presses the Y key (in either letter case) while the Command_Prompt is empty or does not have focus, submits `y` or `yes` in the Command_Prompt (ignoring letter case), or taps the YES button, THE BLUELINE SHALL set the Session's Outcome to DONE, write the updated Session_Record to the Session_History in local storage, and display the Receipt_Screen within 1 second.
-4. WHEN the user presses the N key (in either letter case) while the Command_Prompt is empty or does not have focus, submits `n` or `no` in the Command_Prompt (ignoring letter case), or taps the NO button, THE BLUELINE SHALL set the Session's Outcome to DRIFTED, write the updated Session_Record to the Session_History in local storage, and display the Receipt_Screen within 1 second.
+1. WHEN a Session that has a Purpose ends, THE NO_CARRIER_Screen SHALL display, in this top-to-bottom order: `NO CARRIER` with the disconnect line from the core spec, the Message under `MESSAGE FROM THE PAST` (only if the Session has a Message, as defined in Requirement 4), `PURPOSE:` followed by the Session's Purpose, the question `PURPOSE ACHIEVED?`, a `Y · YES (DONE)` button, and an `N · NO (DRIFTED)` button. This replaces the core spec rule that the NO_CARRIER_Screen is followed by the Receipt_Screen after 3 seconds or on Enter.
+2. WHILE the NO_CARRIER_Screen shows the question `PURPOSE ACHIEVED?`, THE BLUELINE SHALL keep the NO_CARRIER_Screen on screen until the user answers, SHALL NOT move on by itself after any amount of time, and SHALL NOT move on when the user taps the screen outside the two buttons.
+3. WHEN the user presses the Y key (in either letter case) while the Command_Prompt is empty or does not have focus, submits `y` or `yes` in the Command_Prompt (ignoring letter case), or taps the `Y · YES (DONE)` button, THE BLUELINE SHALL set the Session's Outcome to DONE, write the updated Session_Record to the Session_History in local storage, and display the Receipt_Screen within 1 second.
+4. WHEN the user presses the N key (in either letter case) while the Command_Prompt is empty or does not have focus, submits `n` or `no` in the Command_Prompt (ignoring letter case), or taps the `N · NO (DRIFTED)` button, THE BLUELINE SHALL set the Session's Outcome to DRIFTED, write the updated Session_Record to the Session_History in local storage, and display the Receipt_Screen within 1 second.
 5. WHEN a Session ends, THE BLUELINE SHALL append its Session_Record with the Outcome NO ANSWER, as part of core Requirement 9 criterion 1, so that a reload, a closed tab, or a browser exit before the user answers leaves that Session_Record with the Outcome NO ANSWER.
-6. IF the user presses Enter with an empty Command_Prompt, presses a digit key while the Command_Prompt is empty or does not have focus, or submits any text other than `y`, `yes`, `n`, `no`, or `help` (ignoring letter case), while the Purpose_Check_Screen is displayed, THEN THE BLUELINE SHALL display the message `PRESS Y OR N`, keep the Purpose_Check_Screen on screen, and leave the Outcome unchanged.
+6. IF the user presses Enter with an empty Command_Prompt, presses a digit key while the Command_Prompt is empty or does not have focus, or submits any text other than `y`, `yes`, `n`, `no`, or `help` (ignoring letter case), while the NO_CARRIER_Screen shows the question `PURPOSE ACHIEVED?`, THEN THE BLUELINE SHALL display the message `PRESS Y OR N`, keep the NO_CARRIER_Screen on screen, and leave the Outcome unchanged.
 7. WHEN the user has answered once, THE BLUELINE SHALL ignore further Y or N input for that Session and keep the first answer.
 8. IF the write of the updated Session_Record fails, THEN THE BLUELINE SHALL still display the Receipt_Screen with the answered Outcome for the current Session, and display the notice `HISTORY NOT SAVED - STORAGE UNAVAILABLE` as defined in core Requirement 10 criterion 7.
-9. WHEN a Session that has no Purpose ends (a Session recovered from a Legacy_Active_State), THE BLUELINE SHALL skip the Purpose_Check_Screen, keep the Outcome NO ANSWER, and display the Receipt_Screen.
-10. THE YES and NO buttons SHALL be at least 44 CSS pixels wide and 44 CSS pixels tall and SHALL work with a single tap.
-11. WHEN the user presses the Escape key on the Purpose_Check_Screen, THE BLUELINE SHALL keep the Purpose_Check_Screen on screen and leave the Outcome unchanged.
+9. WHEN a Session that has no Purpose ends (a Session recovered from a Legacy_Active_State), THE NO_CARRIER_Screen SHALL show no Purpose and no question, THE BLUELINE SHALL keep the Outcome NO ANSWER, and the NO_CARRIER_Screen SHALL move on to the Receipt_Screen as in core Requirement 7 criterion 7 (after 3 seconds, or earlier on Enter or a tap).
+10. THE `Y · YES (DONE)` and `N · NO (DRIFTED)` buttons SHALL be at least 44 CSS pixels wide and 44 CSS pixels tall and SHALL work with a single tap.
+11. WHEN the user presses the Escape key while the NO_CARRIER_Screen shows the question `PURPOSE ACHIEVED?`, THE BLUELINE SHALL keep the NO_CARRIER_Screen on screen and leave the Outcome unchanged.
+12. WHEN the Receipt_Screen is displayed after an answer, THE BLUELINE SHALL NOT display the NO_CARRIER_Screen or the Message for that Session again.
 
 ### Requirement 6: Receipt with Purpose and Outcome Counts
 
@@ -193,10 +194,10 @@ Terms defined in the core spec keep their meaning unless changed here.
 
 1. WHEN a Session starts, THE BLUELINE SHALL write the Purpose and the Message, if any, to the Active_Session_State together with the core fields, before the Session_Screen is displayed.
 2. WHEN BLUELINE recovers a Session under core Requirement 11 criterion 1, THE BLUELINE SHALL keep the stored Purpose and Message for that Session.
-3. WHEN BLUELINE ends a Session under core Requirement 11 criterion 3 (expired while the tab was closed or reloading), THE BLUELINE SHALL show the stored Message as defined in Requirement 4, then the Purpose_Check_Screen as defined in Requirement 5, then the Receipt_Screen.
+3. WHEN BLUELINE ends a Session under core Requirement 11 criterion 3 (expired while the tab was closed or reloading), THE BLUELINE SHALL show the stored Message and the Purpose_Check on the NO_CARRIER_Screen as defined in Requirements 4 and 5, then the Receipt_Screen after the answer.
 4. WHEN the BLUELINE tab loads with a valid Legacy_Active_State, THE BLUELINE SHALL recover it as in core Requirement 11 with no Purpose and no Message.
 5. IF the stored Active_Session_State has a Purpose that is not a string of 1 to 60 Characters with no leading or trailing whitespace, or a Message that is not a string of 1 to 120 Characters with no leading or trailing whitespace, THEN THE BLUELINE SHALL treat it as invalid under core Requirement 11 criterion 5.
-6. WHEN the BLUELINE tab loads while no Active_Session_State is stored, including after a reload on the NO_CARRIER_Screen, the Purpose_Check_Screen, or the Receipt_Screen, THE BLUELINE SHALL display the Dial_Screen and show no Message.
+6. WHEN the BLUELINE tab loads while no Active_Session_State is stored, including after a reload on the NO_CARRIER_Screen before an answer or on the Receipt_Screen, THE BLUELINE SHALL display the Dial_Screen and show no Message, and the Session_Record SHALL keep the Outcome it had (NO ANSWER if the user did not answer).
 
 ### Requirement 10: Flow Order and State Machine
 
@@ -206,9 +207,9 @@ Terms defined in the core spec keep their meaning unless changed here.
 
 1. THE Session_State_Machine SHALL hold exactly one Session_State at any time, chosen from IDLE, DIALING, SELECT_DEST, SET_PURPOSE, SELECT_DURATION, CONNECTED, and ENDED.
 2. THE Session_State_Machine SHALL apply only these transitions: IDLE → DIALING when the Dial_Sequence starts; DIALING → SELECT_DEST when the Destination_Menu is displayed; SELECT_DEST → SET_PURPOSE when a Destination is selected; SET_PURPOSE → SELECT_DEST when the user goes back from the Purpose_Screen; SET_PURPOSE → SELECT_DURATION when the Message_Screen is submitted; SELECT_DURATION → SET_PURPOSE when the user goes back from the Duration_Menu; SELECT_DURATION → CONNECTED when a Session starts; CONNECTED → ENDED at Time_Up or Hang_Up; and ENDED → IDLE when the Dial_Screen is displayed from the Receipt_Screen. Moving between the Destination_Menu, the URL entry field, and the Board_Screen stays in SELECT_DEST.
-3. WHILE in ENDED, THE BLUELINE SHALL move only forward from the NO_CARRIER_Screen to the Purpose_Check_Screen to the Receipt_Screen, and SHALL NOT return to an earlier one of these screens for the same Session.
-4. THE BLUELINE SHALL request notification permission only as defined in core Requirement 7 criterion 4, and SHALL make no notification permission request on the Purpose_Screen, the Message_Screen, the Board_Screen, or the Purpose_Check_Screen.
-5. THE BLUELINE SHALL open the Destination only from the Connect_Confirm_Screen as defined in core Requirement 5, and SHALL open no tab from the Purpose_Screen, the Message_Screen, the Board_Screen, or the Purpose_Check_Screen.
+3. WHILE in ENDED, THE BLUELINE SHALL move only forward from the NO_CARRIER_Screen to the Receipt_Screen, and SHALL NOT return to the NO_CARRIER_Screen for the same Session. For a Session with a Purpose, the only way forward SHALL be an answer (Requirement 5 criteria 3 and 4); for a Session with no Purpose, the core rule applies (Requirement 5 criterion 9).
+4. THE BLUELINE SHALL request notification permission only as defined in core Requirement 7 criterion 4, and SHALL make no notification permission request on the Purpose_Screen, the Message_Screen, the Board_Screen, or the NO_CARRIER_Screen.
+5. THE BLUELINE SHALL open the Destination only from the Connect_Confirm_Screen as defined in core Requirement 5, and SHALL open no tab from the Purpose_Screen, the Message_Screen, the Board_Screen, or the NO_CARRIER_Screen.
 6. THE ended-is-final property of core Requirement 14 criterion 5 SHALL hold with the new Session_States and transitions.
 
 ### Requirement 11: Commands, Display, and Privacy for the New Screens
@@ -217,10 +218,10 @@ Terms defined in the core spec keep their meaning unless changed here.
 
 #### Acceptance Criteria
 
-1. THE BLUELINE SHALL display the Command_Prompt on the Board_Screen and the Purpose_Check_Screen. On the Purpose_Screen and the Message_Screen, the Text_Field takes the place of the Command_Prompt, as the URL entry field does in the core spec.
-2. WHEN the user submits `help` on the Board_Screen or the Purpose_Check_Screen, THE BLUELINE SHALL list every Command and key that screen accepts, one per line, as in core Requirement 12 criterion 4. The Destination_Menu `help` list SHALL include `4 - BOARD`, and the Duration_Menu `help` list SHALL describe `0` and `back` as returning to the Message_Screen.
+1. THE BLUELINE SHALL display the Command_Prompt on the Board_Screen and on the NO_CARRIER_Screen (as in the core spec). On the Purpose_Screen and the Message_Screen, the Text_Field takes the place of the Command_Prompt, as the URL entry field does in the core spec.
+2. WHEN the user submits `help` on the Board_Screen or on a NO_CARRIER_Screen that shows the Purpose_Check, THE BLUELINE SHALL list every Command and key that screen accepts, one per line, as in core Requirement 12 criterion 4. The Destination_Menu `help` list SHALL include `4 - BOARD`, and the Duration_Menu `help` list SHALL describe `0` and `back` as returning to the Message_Screen.
 3. THE BLUELINE SHALL display the Purpose and the Message as plain text exactly as stored, and SHALL NOT interpret any part of them as HTML or markup.
-4. THE BLUELINE SHALL render the Purpose_Screen, the Message_Screen, the Board_Screen, and the Purpose_Check_Screen with no horizontal scrolling on viewports from 360 to 1920 CSS pixels wide, and the Session_Screen, the NO_CARRIER_Screen, and the Receipt_Screen SHALL keep that rule with a 60-Character Purpose and a 120-Character Message shown.
+4. THE BLUELINE SHALL render the Purpose_Screen, the Message_Screen, and the Board_Screen with no horizontal scrolling on viewports from 360 to 1920 CSS pixels wide, and the Session_Screen, the NO_CARRIER_Screen (with the Purpose_Check), and the Receipt_Screen SHALL keep that rule with a 60-Character Purpose and a 120-Character Message shown.
 5. THE BLUELINE SHALL display all text that BLUELINE generates on the new screens in ALL-CAPS English, and SHALL display the Purpose and the Message exactly as entered after trimming, in any letter case and any script, including Hangul.
 6. THE Notifier SHALL include no Purpose and no Message in a browser notification, and the tab title SHALL include no Purpose and no Message.
 7. THE BLUELINE SHALL send no Purpose, Message, or Outcome over the network, as in core Requirement 10 criterion 2.
@@ -231,8 +232,8 @@ Terms defined in the core spec keep their meaning unless changed here.
 
 #### Acceptance Criteria
 
-1. WHEN a user on the Dial_Screen presses Enter to dial, selects a preset Destination with a digit key, types a Purpose of up to 20 Characters and presses Enter within 10 seconds of the Purpose_Screen appearing, presses Enter on the empty Message_Field, selects the 1 MIN (DEMO) Planned_Duration, presses Enter on the Connect_Confirm_Screen, returns to the BLUELINE tab with a keyboard shortcut before Time_Up, makes no Hang_Up, and presses Y or N on the Purpose_Check_Screen, with every other input entered within 5 seconds of the screen that accepts it appearing, THE BLUELINE SHALL display the Receipt_Screen less than 150 seconds (2 minutes 30 seconds) after the user first presses Enter on the Dial_Screen.
-2. THE BLUELINE-controlled waits in that flow SHALL stay within the 75-second budget of core Requirement 13 criterion 3. A NO_CARRIER_Screen with no Message SHALL still move on after 3 seconds. THE BLUELINE SHALL NOT shorten the Dial_Sequence or the handshake sound to meet this bound.
+1. WHEN a user on the Dial_Screen presses Enter to dial, selects a preset Destination with a digit key, types a Purpose of up to 20 Characters and presses Enter within 10 seconds of the Purpose_Screen appearing, presses Enter on the empty Message_Field, selects the 1 MIN (DEMO) Planned_Duration, presses Enter on the Connect_Confirm_Screen, returns to the BLUELINE tab with a keyboard shortcut before Time_Up, makes no Hang_Up, and presses Y or N on the NO_CARRIER_Screen, with every other input entered within 5 seconds of the screen that accepts it appearing, THE BLUELINE SHALL display the Receipt_Screen less than 150 seconds (2 minutes 30 seconds) after the user first presses Enter on the Dial_Screen.
+2. THE BLUELINE-controlled waits in that flow SHALL stay within the 75-second budget of core Requirement 13 criterion 3. In that flow the NO_CARRIER_Screen waits for the user's Y or N, which is user time; a NO_CARRIER_Screen for a Session with no Purpose SHALL still move on after 3 seconds. THE BLUELINE SHALL NOT shorten the Dial_Sequence or the handshake sound to meet this bound.
 
 ### Requirement 13: Post Numbers
 
@@ -257,13 +258,15 @@ These choices were confirmed before design. Each one is written into the criteri
 3. The Post_Number is a fixed serial number stored in each Session_Record. Legacy_Records get 1 to n in stored order, and each new record gets the largest Post_Number so far plus 1. Removing old records at the 1,000-record limit does not change the numbers of the records that remain. (Req 7.3, 13)
 4. "접속 시간" on the Board is the actual duration in MM:SS, and the date is the end date. (Req 7.3)
 5. The Message is not kept after the Session ends: it is deleted from storage when the Session ends and is shown only on that NO_CARRIER_Screen. (Req 2.6, 4.4)
-6. When a Message is shown, the NO_CARRIER_Screen waits for Enter or tap instead of moving on after 3 seconds. (Req 4.6)
+6. For a Session with a Purpose, the NO_CARRIER_Screen waits for Y or N instead of moving on after 3 seconds; this also gives the user time to read a Message. (Req 5.1, 5.2)
 7. `0` and `back` on the Duration_Menu now return to the Message_Screen, not the Destination_Menu. (Req 3.5)
 8. Over-long text is not cut off while typing; it is rejected on Enter with a message. Characters are counted as Unicode code points. (Req 1.5, 2.5)
 9. In the Text_Fields, `back`, `bye`, and `help` are ordinary text. Going back uses Esc or the BACK button only. (Req 3.2)
-10. A Session recovered from an old-format active state has no Purpose, skips the Purpose_Check_Screen, and records NO ANSWER. (Req 5.9, 9.4)
+10. A Session recovered from an old-format active state has no Purpose: its NO_CARRIER_Screen shows no question, moves on to the receipt as in the core spec, and records NO ANSWER. (Req 5.9, 9.4)
 11. The Session_Screen shows the Purpose. The tab title and browser notifications show no Purpose and no Message. (Req 1.9, 11.6)
 12. The demo bound is 150 seconds (2 minutes 30 seconds) from the first Enter to the Receipt_Screen, and the dial and handshake timing is not shortened. (Req 12.1, 12.2)
 13. New data is written to the v2 storage keys. The v1 history key is only read and is never written or removed. The v1 active key is read as a fallback and is removed when a Session ends. (Req 8.7, design)
 14. The Board uses one line per post at 600 CSS pixels and wider, and moves the Purpose to a second line on a Narrow viewport. (Req 7.3, 7.10)
 15. Outcomes are shown as the words DONE, DRIFTED, and NO ANSWER. The receipt always uses the words (`DONE 1 · DRIFTED 0 · NO ANSWER 2`); the Board uses `Y`, `N`, `?` only on a Narrow viewport. (Req 6.1, 6.2, 7.3)
+16. Purpose and Message stay on two separate screens. (Req 1, 2, 3)
+17. The NO_CARRIER_Screen and the Purpose check are one screen: `NO CARRIER`, the Message (if any), the Purpose, `PURPOSE ACHIEVED?`, and the `Y · YES (DONE)` / `N · NO (DRIFTED)` buttons, in that order. With a Purpose it waits for Y or N, and Esc does nothing. Without a Purpose it moves on to the receipt as in the core spec. (Req 4, 5, 10.3)
