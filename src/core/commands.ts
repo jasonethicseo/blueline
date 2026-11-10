@@ -1,13 +1,18 @@
-// Command_Prompt parsing and per-screen command rules (Requirement 12). Pure.
+// Command_Prompt parsing and per-screen command rules (core Requirement 12; Req 5.3–5.6). Pure.
 import { DURATIONS, type Alias } from './config';
-import type { AppState } from './session';
+import { MSG_PRESS_Y_OR_N, type AppState } from './session-state';
 
 export type Command =
   | { kind: 'number'; n: number }
   | { kind: 'bye' }
   | { kind: 'back' }
   | { kind: 'help' }
-  | { kind: 'go'; alias: Alias };
+  | { kind: 'go'; alias: Alias }
+  /** A one-word answer; accepted only where a screen asks for it (Req 5.3, 5.4). */
+  | { kind: 'word'; word: Word };
+
+export type Word = 'y' | 'yes' | 'n' | 'no';
+const WORDS: readonly Word[] = ['y', 'yes', 'n', 'no'];
 
 export type ParseResult =
   | { type: 'empty' }
@@ -15,10 +20,14 @@ export type ParseResult =
   | { type: 'unknownDestination' }
   | { type: 'unknown' };
 
-/** The screens. All but `purpose` and `memo` have a Command_Prompt; those two have a text field instead. */
+/**
+ * The screens. All but `purpose` and `memo` have a Command_Prompt; those two have a text field instead.
+ * `nocarrierCheck` is the NO_CARRIER_Screen of a Session with a Purpose, which asks PURPOSE ACHIEVED?;
+ * `nocarrier` is the one for a Session without a Purpose (Req 5.1, 5.9).
+ */
 export type ViewName =
   | 'dial' | 'destination' | 'urlEntry' | 'purpose' | 'memo' | 'duration' | 'confirm' | 'session'
-  | 'nocarrier' | 'receipt';
+  | 'nocarrier' | 'nocarrierCheck' | 'receipt';
 
 /** Which screen the state shows; decides accepted commands and key handling. */
 export function viewOf(state: AppState): ViewName {
@@ -35,7 +44,8 @@ export function viewOf(state: AppState): ViewName {
     case 'CONNECTED':
       return 'session';
     case 'ENDED':
-      return state.ended?.view === 'receipt' ? 'receipt' : 'nocarrier';
+      if (state.ended?.view === 'receipt') return 'receipt';
+      return state.ended?.record.purpose ? 'nocarrierCheck' : 'nocarrier';
   }
 }
 
@@ -49,6 +59,7 @@ export function parseCommand(text: string): ParseResult {
   if (t === '') return { type: 'empty' };
   if (/^[0-9]$/.test(t)) return { type: 'command', command: { kind: 'number', n: Number(t) } };
   if (t === 'bye' || t === 'back' || t === 'help') return { type: 'command', command: { kind: t } };
+  if (WORDS.includes(t as Word)) return { type: 'command', command: { kind: 'word', word: t as Word } };
   if (/^go(\s|$)/.test(t)) {
     const m = /^go\s+(yt|ig)$/.exec(t);
     return m ? { type: 'command', command: { kind: 'go', alias: m[1] as Alias } } : { type: 'unknownDestination' };
@@ -80,6 +91,8 @@ export function acceptedCommands(view: ViewName): string[] {
       return ['BYE - HANG UP', 'ESC - HANG UP', HELP_LINE];
     case 'nocarrier':
       return ['ENTER - SHOW RECEIPT', HELP_LINE];
+    case 'nocarrierCheck':
+      return ['Y - YES (DONE)', 'N - NO (DRIFTED)', HELP_LINE];
     case 'receipt':
       return ['1 - DIAL AGAIN', HELP_LINE];
   }
@@ -99,6 +112,8 @@ export function isAccepted(view: ViewName, command: Command): boolean {
       return command.kind === 'back' || (command.kind === 'number' && command.n === 0);
     case 'session':
       return command.kind === 'bye';
+    case 'nocarrierCheck':
+      return command.kind === 'word';
     case 'receipt':
       return command.kind === 'number';
     case 'dial':
@@ -118,9 +133,16 @@ export type InputAction =
 /**
  * What the shell should do with submitted Command_Prompt text on a screen.
  * `none` for empty text: the shell may treat Enter as the screen's default action.
+ * While NO CARRIER asks PURPOSE ACHIEVED?, everything but an answer or `help`, empty Enter
+ * included, shows PRESS Y OR N (Req 5.6).
  */
 export function resolveInput(view: ViewName, text: string): InputAction {
   const r = parseCommand(text);
+  if (view === 'nocarrierCheck') {
+    if (r.type === 'command' && r.command.kind === 'help') return { kind: 'help', lines: acceptedCommands(view) };
+    if (r.type === 'command' && r.command.kind === 'word') return { kind: 'command', command: r.command };
+    return { kind: 'message', text: MSG_PRESS_Y_OR_N };
+  }
   switch (r.type) {
     case 'empty':
       return { kind: 'none' };

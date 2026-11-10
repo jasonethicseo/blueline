@@ -2,7 +2,13 @@
 // (session.ts, session-intent.ts, session-end.ts). Pure. Keeping them here means the
 // reducer files import from this module and never from each other, so there is no cycle.
 import type { Alias } from './config';
-import type { ActiveSession, Label, NewRecord } from './record';
+import type { ActiveSession, Label, NewRecord, Outcome } from './record';
+
+export const MSG_INVALID_SELECTION = 'INVALID SELECTION';
+export const MSG_INVALID_URL = 'INVALID URL';
+export const MSG_INVALID_SCHEME = 'INVALID URL - HTTP OR HTTPS ONLY';
+/** Any input other than an answer while NO CARRIER asks PURPOSE ACHIEVED? (Req 5.6). */
+export const MSG_PRESS_Y_OR_N = 'PRESS Y OR N';
 
 export type Phase = 'IDLE' | 'DIALING' | 'SELECT_DEST' | 'SET_PURPOSE' | 'SELECT_DURATION' | 'CONNECTED' | 'ENDED';
 
@@ -37,7 +43,11 @@ export interface AppState {
   pending: { plannedSec: number; blocked: boolean } | null;
   notifyAsked: boolean;
   session: Session | null;
-  ended: { record: NewRecord; view: 'nocarrier' | 'receipt' } | null;
+  /**
+   * ENDED only. `memo` is the Session's Message while NO CARRIER shows it; it is set to null
+   * when NO CARRIER is left, and nothing else holds it, so it is shown at most once (Req 4.5).
+   */
+  ended: { record: NewRecord; view: 'nocarrier' | 'receipt'; memo: string | null } | null;
 }
 
 export type Event =
@@ -47,7 +57,7 @@ export type Event =
   | { type: 'PURPOSE_SUBMIT'; text: string } | { type: 'MEMO_SUBMIT'; text: string } | { type: 'TYPING' }
   | { type: 'OPENED'; now: number } | { type: 'POPUP_BLOCKED' } | { type: 'LINK_OPENED'; now: number }
   | { type: 'TICK'; now: number } | { type: 'HANG_UP'; now: number }
-  | { type: 'NOCARRIER_DONE' } | { type: 'DIAL_AGAIN' }
+  | { type: 'NOCARRIER_DONE' } | { type: 'ANSWER'; yes: boolean } | { type: 'DIAL_AGAIN' }
   | { type: 'MESSAGE'; text: string | null };
 
 export type Effect =
@@ -57,6 +67,8 @@ export type Effect =
   | { type: 'saveActive'; active: ActiveSession }
   | { type: 'clearActive' }
   | { type: 'endSession'; record: NewRecord }
+  /** Write the answered Outcome into the stored record with this start (Req 5.3, 5.4, 8.9). */
+  | { type: 'saveOutcome'; start: number; outcome: Outcome }
   | { type: 'notifyTimeUp' };
 
 export interface StepResult { state: AppState; effects: Effect[] }

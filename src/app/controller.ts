@@ -2,7 +2,8 @@
 // Lives outside src/core because it uses timers, Date.now(), and browser APIs.
 import { DIAL_TEXT, TIMING } from '../core/config';
 import { fee } from '../core/fee';
-import { buildReceipt, type HistoryStatus, type ReceiptModel } from '../core/history';
+import { buildReceipt, keepReset, type HistoryStatus, type ReceiptModel } from '../core/history';
+import { viewOf } from '../core/commands';
 import { recover } from '../core/recover';
 import { initialState, step, type AppState, type Effect, type Event } from '../core/session';
 import { scheduledEnd } from '../core/session-end';
@@ -57,7 +58,7 @@ export function createController(render: (c: Controller) => void): Controller {
       // Runs whether or not audio started, so a silent dial still connects (Req 1.9).
       later('handshake', TIMING.handshakeMs + 50, () => dispatch({ type: 'HANDSHAKE_DONE' }));
     },
-    historyWritten: (h) => { history = h; },
+    historyWritten: (h) => { history = keepReset(history, h); },
   };
   const run = (fx: Effect) => {
     try { runEffect(fx, host); } catch { /* one failing effect must not stop the flow (Req 13.2) */ }
@@ -94,10 +95,11 @@ export function createController(render: (c: Controller) => void): Controller {
     if (next.phase === 'IDLE' && prev.phase !== 'IDLE') { receipt = null; history = null; finalUntil = 0; }
   }
 
-  // Render, then start the NO CARRIER → receipt timer once NO CARRIER is visible (Req 7.5, 7.7, 7.9).
+  // Render, then start the NO CARRIER → receipt timer once NO CARRIER is visible (core Req 7.5, 7.7, 7.9).
+  // Only for a Session without a Purpose: with one, the screen waits for Y or N (Req 5.2, 5.9).
   function paint(): void {
     render(api);
-    const showing = state.phase === 'ENDED' && state.ended?.view === 'nocarrier' && !finalFrame() && page.isVisible();
+    const showing = viewOf(state) === 'nocarrier' && !finalFrame() && page.isVisible();
     if (!showing) clear('noCarrier');
     else if (!t.noCarrier) later('noCarrier', TIMING.noCarrierMs, () => handlers.noCarrierDone());
   }
@@ -159,6 +161,8 @@ export function createController(render: (c: Controller) => void): Controller {
     linkOpened: () => dispatch({ type: 'LINK_OPENED', now: Date.now() }),
     hangUp: () => dispatch({ type: 'HANG_UP', now: Date.now() }),
     noCarrierDone: () => dispatch({ type: 'NOCARRIER_DONE' }),
+    // Not during the held 00:00 frame, so the user has seen the question (Req 5.1).
+    answer: (yes) => { if (!finalFrame()) dispatch({ type: 'ANSWER', yes }); },
   };
 
   const keys = createKeys({ state: () => state, dispatch, handlers });

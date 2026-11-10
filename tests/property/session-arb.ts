@@ -27,6 +27,7 @@ export const anyEvent: fc.Arbitrary<Event> = fc.oneof(
   time.map((now): Event => ({ type: 'TICK', now })),
   time.map((now): Event => ({ type: 'HANG_UP', now })),
   simple('NOCARRIER_DONE'), simple('DIAL_AGAIN'),
+  fc.boolean().map((yes): Event => ({ type: 'ANSWER', yes })),
   fc.constantFrom('X', null).map((text): Event => ({ type: 'MESSAGE', text })),
 );
 
@@ -41,7 +42,7 @@ const toConfirm: Event[] = [...toDuration, { type: 'MENU_KEY', n: 1 }];
 const toPending: Event[] = [...toConfirm, { type: 'CONFIRM' }];
 export const toConnected: Event[] = [...toPending, { type: 'OPENED', now: BASE }];
 export const toEnded: Event[] = [...toConnected, { type: 'HANG_UP', now: BASE + 5_000 }];
-const toReceipt: Event[] = [...toEnded, { type: 'NOCARRIER_DONE' }];
+const toReceipt: Event[] = [...toEnded, { type: 'ANSWER', yes: true }];
 
 export const prefix = fc.constantFrom<Event[]>(
   [], [{ type: 'DIAL' }], toDest, [...toDest, { type: 'MENU_KEY', n: 3 }], toPurpose, toMemo,

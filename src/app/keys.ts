@@ -45,10 +45,12 @@ export function createKeys(c: KeyContext): Keys {
     if (cmd.kind === 'bye') return h.hangUp();
     if (cmd.kind === 'back') return h.back();
     if (cmd.kind === 'go') return c.dispatch({ type: 'GO', alias: cmd.alias });
+    if (cmd.kind === 'word') return h.answer(cmd.word === 'y' || cmd.word === 'yes');
   }
 
   // Escape works wherever focus is (core Req 8.2, 4.8; Req 3.3, 3.4). input.ts has already
-  // skipped key presses that belong to an input method composition (Req 3.6).
+  // skipped key presses that belong to an input method composition (Req 3.6). On the
+  // NO_CARRIER_Screen it does nothing, also while the Purpose check waits (Req 5.11).
   function escape(): void {
     const state = c.state();
     const v = viewOf(state);

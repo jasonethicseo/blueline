@@ -30,7 +30,8 @@ function route(c: Controller): void {
     case 'memo': return purpose.render(screen, state, view);
     case 'confirm': return confirm.render(screen, state, view);
     case 'session': return session.render(screen, state, view);
-    case 'nocarrier': return nocarrier.render(screen, state, view);
+    case 'nocarrier':
+    case 'nocarrierCheck': return nocarrier.render(screen, state, view);
     case 'receipt': return receipt.render(screen, state, view);
   }
 }

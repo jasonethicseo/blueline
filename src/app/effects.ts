@@ -1,5 +1,5 @@
 // Runs the effects the core returns, by calling platform and audio wrappers.
-import { appendRecord, type HistoryStatus } from '../core/history';
+import { appendRecord, setOutcome, type HistoryStatus } from '../core/history';
 import type { Effect, Event } from '../core/session';
 import * as modem from '../audio/modem';
 import * as notify from '../platform/notify';
@@ -52,6 +52,18 @@ export function runEffect(fx: Effect, host: EffectHost): void {
         host.historyWritten(storage.saveHistory(records) ? { kind: loaded.kind, records } : { kind: 'unavailable' });
       }
       storage.clearActive();
+      return;
+    }
+    case 'saveOutcome': {
+      // Change only that record's Outcome (Req 8.9). A failed write keeps the stored NO ANSWER
+      // and the receipt counts the answer from the current Session (Req 5.8).
+      const loaded = storage.loadHistory();
+      if (loaded.kind === 'unavailable') {
+        host.historyWritten(loaded);
+      } else {
+        const records = setOutcome(loaded.records, fx.start, fx.outcome);
+        host.historyWritten(storage.saveHistory(records) ? { kind: loaded.kind, records } : { kind: 'unavailable' });
+      }
       return;
     }
     case 'notifyTimeUp':

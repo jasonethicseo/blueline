@@ -3,8 +3,9 @@
 import { viewOf, type ViewName } from '../core/commands';
 import type { Controller } from './controller';
 
-// Screens where a bare digit key is a menu selection (Req 2.3, 4.3, 4.8, 9.9).
-const DIGIT_VIEWS = new Set<ViewName>(['destination', 'duration', 'confirm', 'receipt']);
+// Screens where a bare digit key is a menu selection (core Req 2.3, 4.3, 4.8, 9.9), or shows
+// PRESS Y OR N while NO CARRIER asks PURPOSE ACHIEVED? (Req 5.6).
+const DIGIT_VIEWS = new Set<ViewName>(['destination', 'duration', 'confirm', 'receipt', 'nocarrierCheck']);
 
 let pointer = false;
 
@@ -46,11 +47,21 @@ export function attachInput(c: Controller, prompt: HTMLInputElement, form: HTMLF
     }
 
     // A bare digit selects on menu screens, unless the user is typing text (Req 3.9, 12.5).
-    if (/^[0-9]$/.test(e.key) && DIGIT_VIEWS.has(viewOf(c.state()))) {
-      const typing = target instanceof HTMLInputElement && (target !== prompt || prompt.value !== '');
+    const view = viewOf(c.state());
+    const typing = target instanceof HTMLInputElement && (target !== prompt || prompt.value !== '');
+    if (/^[0-9]$/.test(e.key) && DIGIT_VIEWS.has(view)) {
       if (!typing) {
         e.preventDefault();
         c.handlers.menu(Number(e.key));
+      }
+      return;
+    }
+
+    // Y or N answers PURPOSE ACHIEVED? on the NO_CARRIER_Screen, in either letter case (Req 5.3, 5.4).
+    if (view === 'nocarrierCheck' && /^[yn]$/i.test(e.key)) {
+      if (!typing) {
+        e.preventDefault();
+        c.handlers.answer(e.key.toLowerCase() === 'y');
       }
       return;
     }

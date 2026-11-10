@@ -116,7 +116,7 @@ describe('connected and ended', () => {
   });
 
   it('receipt: 1 dials again, other digits show INVALID SELECTION', () => {
-    const receipt = run([{ type: 'HANG_UP', now: T0 + 1_000 }, { type: 'NOCARRIER_DONE' }], connected).state;
+    const receipt = run([{ type: 'HANG_UP', now: T0 + 1_000 }, { type: 'ANSWER', yes: true }], connected).state;
     expect(receipt.ended?.view).toBe('receipt');
     expect(run([{ type: 'MENU_KEY', n: 2 }], receipt).state.message).toBe(MSG_INVALID_SELECTION);
     expect(run([{ type: 'MENU_KEY', n: 1 }], receipt).state).toMatchObject({ phase: 'IDLE', seq: 1, notifyAsked: false });

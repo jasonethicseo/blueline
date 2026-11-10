@@ -3,22 +3,19 @@
 import { PRESETS, ALIASES, durationByKey, type PresetLabel } from './config';
 import { normalizeUrl } from './url';
 import { endSession, reasonAt, scheduledEnd } from './session-end';
+import { endedStep } from './session-ended';
 import { intentStep } from './session-intent';
 import {
-  initialState, same, say, toDestMenu,
+  MSG_INVALID_SCHEME, MSG_INVALID_SELECTION, MSG_INVALID_URL, same, say, toDestMenu,
   type AppState, type Destination, type Event, type Session, type StepResult,
 } from './session-state';
 
 export * from './session-state';
 
-export const MSG_INVALID_SELECTION = 'INVALID SELECTION';
-export const MSG_INVALID_URL = 'INVALID URL';
-export const MSG_INVALID_SCHEME = 'INVALID URL - HTTP OR HTTPS ONLY';
-
 // User inputs clear the previous message before they are handled (core Req 2.6, 4.5; Req 1.7).
 const USER_INPUTS = new Set<Event['type']>([
   'DIAL', 'DIAL_SKIP', 'MENU_KEY', 'GO', 'URL_SUBMIT', 'BACK', 'CONFIRM',
-  'PURPOSE_SUBMIT', 'MEMO_SUBMIT', 'TYPING',
+  'PURPOSE_SUBMIT', 'MEMO_SUBMIT', 'TYPING', 'ANSWER',
   'LINK_OPENED', 'HANG_UP', 'NOCARRIER_DONE', 'DIAL_AGAIN',
 ]);
 
@@ -43,7 +40,7 @@ export function step(state: AppState, event: Event): StepResult {
     case 'SET_PURPOSE': return intentStep(s, event);
     case 'SELECT_DURATION': return s.pending ? connecting(s, event) : s.confirm ? confirmScreen(s, event) : durationMenu(s, event);
     case 'CONNECTED': return connected(s, event);
-    case 'ENDED': return ended(s, event);
+    case 'ENDED': return endedStep(s, event);
   }
 }
 
@@ -127,16 +124,5 @@ function connected(s: AppState, e: Event): StepResult {
   if (!session) return same(s);
   if (e.type === 'TICK' && e.now >= scheduledEnd(session)) return endSession(s, session, 'TIME UP', e.now, true);
   if (e.type === 'HANG_UP') return endSession(s, session, reasonAt(session, 'HANG UP', e.now), e.now, true);
-  return same(s);
-}
-
-function ended(s: AppState, e: Event): StepResult {
-  const done = s.ended;
-  if (!done) return same(s);
-  if (done.view === 'nocarrier') {
-    return e.type === 'NOCARRIER_DONE' ? same({ ...s, ended: { ...done, view: 'receipt' } }) : same(s);
-  }
-  if (e.type === 'DIAL_AGAIN' || (e.type === 'MENU_KEY' && e.n === 1)) return same(initialState(s.seq));
-  if (e.type === 'MENU_KEY') return say(s, MSG_INVALID_SELECTION);
   return same(s);
 }

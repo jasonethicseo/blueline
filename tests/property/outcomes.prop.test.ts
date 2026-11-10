@@ -5,8 +5,8 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import { MAX_HISTORY } from '../../src/core/config';
-import { outcomeCounts, setOutcome, type Counts } from '../../src/core/history';
-import type { Outcome, SessionRecord } from '../../src/core/record';
+import { appendRecord, buildReceipt, outcomeCounts, setOutcome, type Counts } from '../../src/core/history';
+import type { NewRecord, Outcome, SessionRecord } from '../../src/core/record';
 import { outcome, recordEndingAt, storedHistory, timestamp } from './arbitraries';
 
 // Reference model from local calendar dates, independent of periodStarts (as in Property 11).
@@ -65,6 +65,35 @@ describe('Property 3: Outcome counts add up', () => {
         const c = outcomeCounts(legacy, now);
         expect(c.all).toEqual({ done: 0, drifted: 0, noAnswer: legacy.length });
       }),
+      { numRuns: 100 },
+    );
+  });
+});
+
+describe('Property 3 (merged NO CARRIER screen): a Session ended there is counted once', () => {
+  const key = (o: Outcome): keyof Counts => (o === 'DONE' ? 'done' : o === 'DRIFTED' ? 'drifted' : 'noAnswer');
+  const plus = (c: Counts, o: Outcome): Counts => ({ ...c, [key(o)]: c[key(o)] + 1 });
+
+  it('answered Y, answered N, or left unanswered, the receipt counts add up and include it once', () => {
+    fc.assert(
+      fc.property(
+        storedHistory(MAX_HISTORY, 0, 'max'), timestamp, fc.constantFrom('Y', 'N', 'none'), fc.boolean(),
+        (history, now, answer, writeFails) => {
+          // endSession appends the record as NO ANSWER (Req 5.5) ...
+          const ended: NewRecord = { ...recordEndingAt(now, 40), purpose: '강의 하나만' };
+          const afterEnd = appendRecord(history, ended);
+          // ... and an answer on NO CARRIER writes the Outcome, unless the write fails (Req 5.3, 5.4, 5.8).
+          const outcome: Outcome = answer === 'Y' ? 'DONE' : answer === 'N' ? 'DRIFTED' : 'NO ANSWER';
+          const stored = answer === 'none' || writeFails ? afterEnd : setOutcome(afterEnd, ended.start, outcome);
+          const r = buildReceipt({ ...ended, outcome }, { kind: 'ok', records: stored }, now);
+
+          const others = outcomeCounts(afterEnd.slice(0, -1), now);
+          expect(r.counts.today).toEqual(plus(others.today, outcome));
+          expect(r.counts.week).toEqual(plus(others.week, outcome));
+          const inToday = stored.filter((x) => x.end <= now && cmp(ymd(x.end), ymd(now)) === 0).length;
+          expect(total(r.counts.today)).toBe(inToday);
+        },
+      ),
       { numRuns: 100 },
     );
   });

@@ -121,6 +121,14 @@ export function setOutcome(records: readonly SessionRecord[], start: number, out
 }
 
 /**
+ * The history status to keep after a write. A `reset` notice must survive the answer write,
+ * which reads back the freshly written history as `ok` (purpose-board design).
+ */
+export function keepReset(prev: HistoryStatus | null, next: HistoryStatus): HistoryStatus {
+  return prev?.kind === 'reset' && next.kind === 'ok' ? { kind: 'reset', records: next.records } : next;
+}
+
+/**
  * Receipt values. `history` is the stored history after the record was appended.
  * The just-ended Session is counted with its answered Outcome even if writing the answer
  * failed (Req 6.3). When storage is unavailable, totals and counts use only the current

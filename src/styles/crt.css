@@ -167,6 +167,20 @@ button {
   text-shadow: none;
 }
 
+/* The Y / N answers on the NO_CARRIER_Screen (Req 5.1, 5.10). */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1ch;
+}
+
+/* The Message on the NO_CARRIER_Screen (Req 4.1). */
+.memo {
+  margin: 0.5rem 0;
+  padding: 0.25rem 1ch;
+  border: 1px dashed var(--em);
+}
+
 :focus-visible {
   outline: 2px solid var(--em);
   outline-offset: 2px;

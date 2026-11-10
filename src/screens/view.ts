@@ -17,6 +17,8 @@ export interface Handlers {
   linkOpened(): void;
   hangUp(): void;
   noCarrierDone(): void;
+  /** Y or N on the NO_CARRIER_Screen (Req 5.3, 5.4). */
+  answer(yes: boolean): void;
 }
 
 /** Values the shell computes from `now` before each render. */

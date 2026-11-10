@@ -122,34 +122,35 @@ Conventions for every task:
     - Back from the Message_Screen keeps the Purpose. Back from the Duration_Menu shows the earlier Message. `back`, `bye`, and `0` submitted in the Purpose_Field are accepted as Purpose text. Duration_Menu `help` lines.
     - _Requirements: 3.2, 3.4, 3.5, 11.2_
 
-- [ ] 5. NO CARRIER with the Message and the Purpose check (tasks 5 and 6 merged after review)
-  - [ ] 5.1 Carry the memo into the ended state and create `src/core/session-ended.ts`
+- [x] 5. NO CARRIER with the Message and the Purpose check (tasks 5 and 6 merged after review)
+  - [x] 5.1 Carry the memo into the ended state and create `src/core/session-ended.ts`
     - `endSession` sets `ended.memo = session.memo` and keeps `session.memo = null`. A recovered expired Session shows its memo.
     - ENDED views are `nocarrier` and `receipt` only. With a Purpose: `ANSWER { yes }` sets `DONE` or `DRIFTED`, sets `memo = null`, moves to the receipt, and returns `saveOutcome`; `NOCARRIER_DONE` does nothing; digits → `PRESS Y OR N`. With no Purpose: `NOCARRIER_DONE` sets `memo = null` and moves to the receipt, as in the core spec. No backward transitions.
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.6, 5.7, 5.9, 5.12, 9.3, 10.3_
-  - [ ] 5.2 Effects, controller, commands, and input
+  - [x] 5.2 Effects, controller, commands, and input
     - `saveOutcome` effect with `setOutcome`. `historyWritten` keeps a `reset` status through the answer write. A failed write → `unavailable`.
     - The controller arms the 3 s NO CARRIER timer only for the `nocarrier` view (no Purpose).
     - Commands: `word` kind for `y`, `yes`, `n`, `no`. `viewOf` returns `nocarrierCheck` for a NO_CARRIER_Screen with a Purpose. On `nocarrierCheck`, everything except these and `help` → `PRESS Y OR N`, including empty Enter. `help` lines for `nocarrierCheck`.
     - `input.ts`: `y` and `n` keys and digits on `nocarrierCheck`. `keys.ts`: Escape on `nocarrierCheck` does nothing. Handlers gain `answer(yes)`.
     - _Requirements: 5.2, 5.3, 5.4, 5.6, 5.8, 5.9, 5.11, 11.2, 12.2_
-  - [ ] 5.3 Update `src/screens/nocarrier.ts`
+  - [x] 5.3 Update `src/screens/nocarrier.ts`
     - Top to bottom: `NO CARRIER` and the disconnect line; `MESSAGE FROM THE PAST` and the Message (only with a Message); `PURPOSE:` and the Purpose, `PURPOSE ACHIEVED?`, and the `Y · YES (DONE)` and `N · NO (DRIFTED)` buttons (≥ 44 px), with a hint that leaving without an answer records NO ANSWER (only with a Purpose). With a Purpose, a tap outside the buttons does nothing. Without a Purpose, the core screen and its tap behavior stay. All user text as plain text.
     - _Requirements: 4.1, 4.3, 5.1, 5.2, 5.9, 5.10, 11.3, 11.4_
-  - [ ] 5.4 Write property test in `tests/property/memo.prop.test.ts`
+  - [x] 5.4 Write property test in `tests/property/memo.prop.test.ts`
     - **Property 5: A Message is shown at most once**
     - Model reloads with a fake storage map and `recover()`. Include answers, `NOCARRIER_DONE` from a timer or a tap, and reloads before and after the answer.
     - **Validates: Requirements 4.4, 4.5, 5.12, 9.6**
-  - [ ] 5.5 Write property tests in `tests/property/session.prop.test.ts` and `tests/property/outcomes.prop.test.ts`
+  - [x] 5.5 Write property tests in `tests/property/session.prop.test.ts` and `tests/property/outcomes.prop.test.ts`
+    - Changed during the task: Property 13 and the ENDED part of Property 16 went into the new `tests/property/ended.prop.test.ts`, because `session.prop.test.ts` was already at about 200 lines.
     - **Property 13: Ended screens move only forward, and ended is final**
     - Update **Property 16** so the ENDED view changes follow the merged screen: with a Purpose only `ANSWER` leaves NO CARRIER, without one only `NOCARRIER_DONE`.
     - Extend **Property 3** with a Session ended on the NO_CARRIER_Screen (answered Y, N, or not at all): the receipt counts still add up and count that Session once, under its Outcome.
     - **Validates: Requirements 5.2, 5.3, 5.4, 5.5, 5.9, 6.3, 6.4, 10.2, 10.3, 10.6**
-  - [ ] 5.6 Write property test in `tests/property/record.prop.test.ts`
+  - [x] 5.6 Write property test in `tests/property/record.prop.test.ts`
     - **Property 14: Storage holds no URL, and history holds no Message**
     - Replaces core Property 14.
     - **Validates: Requirements 4.4, 8.1, 8.2**
-  - [ ] 5.7 Write unit tests
+  - [x] 5.7 Write unit tests
     - The Message is shown after a Hang_Up and after a Time_Up; no heading without a Message. With a Purpose: no move-on after 3 s, on Enter, on a tap, or on Esc; only the first answer counts; `PRESS Y OR N` for Enter, digits, and other text. A Session recovered from a v1 active state asks nothing, moves on, and records NO ANSWER. The receipt shows the answered Outcome when `saveOutcome` fails. `HISTORY RESET` is still shown after the answer is saved.
     - _Requirements: 4.1, 4.3, 5.2, 5.6, 5.7, 5.8, 5.9, 5.11, 13.7_
 

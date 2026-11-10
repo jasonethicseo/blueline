@@ -1,5 +1,6 @@
 // Feature: blueline-core-flow, Property 15: Recovery decision
 // Feature: blueline-core-flow, Property 14: No URL reaches storage
+// Feature: blueline-purpose-board, Property 14: Storage holds no URL, and history holds no Message
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import { recover } from '../../src/core/recover';
@@ -93,11 +94,13 @@ describe('Property 14: No URL reaches storage', () => {
             { type: 'URL_SUBMIT', text: input }, { type: 'PURPOSE_SUBMIT', text: PURPOSE },
             { type: 'MEMO_SUBMIT', text: MEMO }, { type: 'MENU_KEY', n: key }, { type: 'CONFIRM' },
             { type: 'OPENED', now: BASE }, hang ? { type: 'HANG_UP', now: BASE + after } : { type: 'TICK', now: BASE + 4_000_000 },
+            { type: 'ANSWER', yes: hang },
           ];
           const effects = effectsOf(replay(events));
-          // The path must really start and end a Session, or the checks below say nothing.
+          // The path must really start, end, and answer a Session, or the checks below say nothing.
           expect(effects.some((e) => e.type === 'saveActive')).toBe(true);
           expect(effects.some((e) => e.type === 'endSession')).toBe(true);
+          expect(effects.some((e) => e.type === 'saveOutcome')).toBe(true);
           const opened = effects.find((e) => e.type === 'openDestination');
           expect(opened).toEqual({ type: 'openDestination', url: `https://${input}` });
           const host = input.split('/')[0] as string;
@@ -107,11 +110,19 @@ describe('Property 14: No URL reaches storage', () => {
               expect(serializeActive(e.active)).not.toContain(host);
             }
             if (e.type === 'endSession') {
+              const text = serializeHistory(appendRecord([], e.record));
               expect(JSON.stringify(e)).not.toContain(host);
-              expect(serializeHistory(appendRecord([], e.record))).not.toContain(host);
+              expect(text).not.toContain(host);
+              // The history never holds the Message (Req 8.2).
+              expect(JSON.stringify(e)).not.toContain(MEMO);
+              expect(text).not.toContain(MEMO);
               expect(e.record.end).toBeLessThanOrEqual(scheduledEnd({
                 id: 1, start: BASE, plannedSec: e.record.plannedSec, label: 'CUSTOM', purpose: null, memo: null,
               }));
+            }
+            if (e.type === 'saveOutcome') {
+              expect(JSON.stringify(e)).not.toContain(host);
+              expect(JSON.stringify(e)).not.toContain(MEMO);
             }
           }
         }),

@@ -48,7 +48,7 @@ describe('Property 16: Only listed transitions happen', () => {
 describe('Property 8: Ended is final', () => {
   // Dial again and reconnect, with random events mixed in between the steps.
   const reconnect: Event[] = [
-    { type: 'NOCARRIER_DONE' }, { type: 'DIAL_AGAIN' }, { type: 'DIAL' }, { type: 'HANDSHAKE_DONE' },
+    { type: 'ANSWER', yes: false }, { type: 'DIAL_AGAIN' }, { type: 'DIAL' }, { type: 'HANDSHAKE_DONE' },
     { type: 'SHOW_MENU' }, { type: 'MENU_KEY', n: 1 }, { type: 'PURPOSE_SUBMIT', text: PURPOSE },
     { type: 'MEMO_SUBMIT', text: '' }, { type: 'MENU_KEY', n: 1 }, { type: 'CONFIRM' },
   ];

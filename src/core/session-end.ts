@@ -51,8 +51,13 @@ export function endSession(
   const record = endRecord(session, reason, now);
   const effects: Effect[] = [{ type: 'endSession', record }, { type: 'playNoCarrier' }];
   if (notify && reason === 'TIME UP') effects.push({ type: 'notifyTimeUp' });
+  // The Message moves from the Session to the NO CARRIER view; storage loses it with the
+  // active state in the endSession effect (Req 4.1, 4.4).
   return {
-    state: { ...state, phase: 'ENDED', message: null, session, ended: { record, view: 'nocarrier' } },
+    state: {
+      ...state, phase: 'ENDED', message: null, session: { ...session, memo: null },
+      ended: { record, view: 'nocarrier', memo: session.memo },
+    },
     effects,
   };
 }
