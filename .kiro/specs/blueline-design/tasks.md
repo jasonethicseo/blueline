@@ -107,11 +107,11 @@ Conventions for every task:
   - Headless Chrome at 360 and 1280 px (scripts outside the repo): every screen has the frame; no horizontal scroll; Display_Face lines fit; only Palette colors in computed styles; focus outline; the Haunted_Screen after a hidden Time_Up with the demo duration (Grace_Period 10 s), the level growing over 60 s, no flicker under reduced motion, then NO CARRIER with the Message; reload cases (가) and (나); demo timing both ways under 150 s. Record the results in `docs/manual-checks.md` part D.
   - _Requirements: 1.1, 1.7, 3.1, 3.2, 9.12, 9.13, 12.1–12.6_
 
-- [ ] 11. Device checks
+- [x] 11. Device checks
   - Ask the user which devices are available. Then check and record in part D: the open rows of part B and part C2 (including iPhone Safari with a Hangul keyboard), the Haunted_Screen on a desktop browser and on iPhone Safari (stay in the destination app past the end, then return; reload case (가)), and the screens next to the mockups.
   - _Requirements: 13.1, 13.2_
 
-- [ ] 12. README
+- [x] 12. README
   - Write `README.md` as planned in the core design, updated for the purpose-board features and this spec: what it is, the demo path (both ways), how it works, privacy (what is stored, no URL, the Message only until NO CARRIER), known limitations (iPhone background tabs, the desktop-only 60-second alert), development, how Kiro specs, steering, and hooks were used, credits and licenses (MIT, GalmuriMono11 under OFL, synthesized sounds).
   - This is the README task moved here from core task 16 and purpose-board task 9.
   - _Requirements: 13.3_
