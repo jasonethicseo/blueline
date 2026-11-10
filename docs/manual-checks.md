@@ -159,27 +159,34 @@ Also checked in this task: `npm test` (both time zones: Asia/Seoul and America/N
 
 Not covered by D1: the sound, the real notification prompt, and a screen reader. Those are in D2.
 
-### D2: needs a person and real devices
+### D2: desktop checks on this Mac, and what is left (2026-11-10)
 
-Rows moved from part B and part C2 are copied here as they were left open. Mark each line with the
-browser version and the result. Task 11 does these with the user.
+The user has a Mac with Chrome and Safari, and no phone, Firefox, or Android device for these checks. The
+Orca computer-use helper reported its permissions as granted but every UI action was refused with
+`permission_denied`, so the Chrome checks below were run by the same DevTools-protocol scripts as D1,
+against the production preview (`npx vite preview`, `http://localhost:4173/`, CSP on) in a separate,
+fresh Chrome profile. Destination tabs opened a page on the same preview server
+(`/fonts/OFL.txt`), so nothing left the machine. Safari could not be driven: `safaridriver` needs
+"Allow remote automation" in Safari's Developer settings, which is off.
+
+Chrome 157.0.8103.50, macOS. Result: **27 / 27 passed** (20 flow checks + 7 Hangul IME checks).
 
 | Check | How | Requirement | Result |
 |---|---|---|---|
-| Handshake and NO CARRIER sound like a modem and a busy signal | Listen during the demo | core 1.5, 7.2 | |
-| Permission prompt appears on the duration pick (Chrome, Safari, Firefox, Edge desktop) | Fresh profile; pick a duration | core 7.4 | |
-| Destination opens on Enter and on tapping CONNECT; Escape, `0`, `back` return from confirm | Try each | core 4.8, 5.1 | |
-| Popup blocked path: link gets keyboard focus; Enter on it opens the tab | Block popups for the site | core 5.5, 5.6 | |
-| Firefox: popup allowed from the Enter `keydown` | Firefox desktop | core 5.1 | |
-| Hidden tab at the Time_Up on desktop: notification (granted) within 60 s | Stay in the destination tab for the 1 MIN session | core 7.3, 7.9 | |
-| Hidden tab at the Time_Up on desktop: title flashes NO CARRIER (denied) within 60 s | Deny permission, repeat | core 7.5, 7.9 | headless Chrome: pass (see D1) |
-| Haunted_Screen on a desktop browser | Stay in the destination tab past the Grace_Period (10 s for the 1 MIN session) | 9.1, 13.2 | |
-| Haunted_Screen on iPhone Safari | Stay in the destination app past the end, then switch back; also reload the paused tab | 9.1, 9.12, 13.2 | |
-| iPhone Safari: after the Time_Up, NO CARRIER then the receipt; the fee is the full planned duration | Same as above | core 7.13 | |
-| iPhone Safari: tapping YOUTUBE / INSTAGRAM hands off to the app if installed | Tap through the flow | tech.md | |
-| Android Chrome: no error when notifications are granted (title-flash fallback) | Grant notifications, let time run out | core 7.5 | |
-| Mobile: tapping menu items does not pop up the keyboard each time | Phone, tap through the flow | core 12.7 | |
-| Hangul IME on iPhone Safari: Enter while composing submits once; Esc does not go back | Purpose and Message screens | purpose-board 3.6, 3.7 | |
-| Screen reader reads menu items, the Status_Bar, and the Progress_Bar text without box or block characters | VoiceOver on the menu, the Session, and the Haunted_Screen | 11.2 | |
-| Demo under 150 s for a first-time user on a laptop, with the Message and Purpose check | Time it | 12.4 | |
-| Each screen next to its mockup in `docs/mockups/` | Compare by eye | 1.1–1.3 | |
+| Handshake and NO CARRIER sound like a modem and a busy signal | Listen during the demo | core 1.5, 7.2 | Chrome: the AudioContext is created inside the dial key press, is `running`, and starts 24 oscillators. **How it sounds is not checked** (no one listened). |
+| Permission prompt on the duration pick | Fresh profile; pick a duration | core 7.4 | Chrome: pass. No request before the pick; exactly one `Notification.requestPermission` on the pick; no tab opened by it. |
+| Destination opens on Enter and on clicking CONNECT; Escape, `0`, `back` return from confirm | Each one | core 4.8, 5.1 | Chrome: pass. Enter and the CONNECT button each open exactly one tab, URL unchanged, `window.opener === null` in it; Esc, `0`, and `back` each return to the Duration_Menu. |
+| Popup blocked path: link gets keyboard focus; Enter on it opens the tab | `window.open` returning `null` (the blocker's result) | core 5.5, 5.6 | Chrome: pass. `POPUP BLOCKED` with the link focused; Enter on the link opens one tab and starts the Session. A real popup-blocker setting was not toggled. |
+| Firefox: popup allowed from the Enter `keydown` | Firefox desktop | core 5.1 | Not checked: no Firefox. |
+| Hidden tab at the Time_Up on desktop: notification (granted) within 60 s | Permission granted; stay in the destination tab for the 1 MIN session | core 7.3, 7.9 | Chrome: pass. `NO CARRIER` / `SESSION TIME IS UP.` 59.3 s after hiding (the end of the minute), no Purpose in it, no title flash. |
+| Hidden tab at the Time_Up on desktop: title flashes NO CARRIER (not granted) within 60 s | Permission not granted, repeat | core 7.5, 7.9 | Chrome: pass (D1). |
+| Haunted_Screen on a desktop browser | Stay away past the 10 s Grace_Period, come back | 9.1, 13.2 | Chrome: pass (here and in D1), both with the notification granted and not. |
+| Hangul IME: an Enter that ends a composition (keyCode 229) does not submit; the next Enter submits once; Esc while composing does not go back | `Input.imeSetComposition` plus a keyCode 229 key press, on the Purpose and Message screens | purpose-board 3.6, 3.7 | Chrome (emulated IME events): pass, 6 / 6. Real macOS input method: pass in Chrome and Safari in part C2 on the earlier screens. |
+| `ENTER · NEXT` button submits like Enter (empty Message skips) | Click it | 5.5 | Chrome: pass. |
+| Each screen next to its mockup in `docs/mockups/` | Both at 960 × 600, side by side, by eye | 1.1–1.3 | Chrome: pass. Dial, Purpose, Message, Session, NO CARRIER, and Haunted follow the mockups' layout, colors, and copy order. Differences are the confirmed decisions (real version `0.1.0`, the 10-digit dial number, no `GO BOARD`, multiples of 11 px) plus the Character_Counter and the Command_Prompt row. At 600 px tall the Haunted and Session screens scroll vertically to reach the Function_Key_Bar. |
+| Safari: any of the above | | | **Not checked automatically**: turn on Safari → Settings → Advanced → "Show features for web developers", then Developer → "Allow remote automation", or check by hand. |
+| Screen reader reads menu items, the Status_Bar, and the Progress_Bar text without box or block characters | VoiceOver | 11.2 | Not checked. The DOM has no box characters, the Progress_Bar cells are `aria-hidden` with a `NN% OF BOOKED TIME` text, and the ghost layer is `aria-hidden` (D1). |
+| Demo under 150 s for a first-time user on a laptop | Time it | 12.4 | Not checked with a person. Scripted: 78.0 s and 107.0 s (D1). |
+| iPhone Safari: Haunted_Screen after the app comes back, reload of a paused tab, NO CARRIER then the receipt with the full fee, app hand-off, Hangul keyboard | iPhone | 9.1, 9.12, core 7.13, purpose-board 3.6 | Not checked: no iPhone. Reload case (가) is covered in D1 by writing the expired active state and reloading. |
+| Android Chrome: no error when notifications are granted | Android phone | core 7.5 | Not checked: no Android device. `notify.show` catches the constructor error and falls back to the title flash. |
+| Mobile: tapping menu items does not pop up the keyboard each time | Phone | core 12.7 | Not checked: no phone. |
