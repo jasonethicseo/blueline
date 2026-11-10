@@ -169,6 +169,8 @@ Terms from the core spec and the purpose-board spec keep their meaning.
 9. WHEN the user presses Enter (or taps `ENTER · FACE IT`), THE BLUELINE SHALL show the NO_CARRIER_Screen of Requirement 8, with the Message if the Session has one.
 10. THE Haunted_Screen SHALL NOT change the fee, the Session_Record, or the Outcome, SHALL NOT show the Message, and SHALL appear at most once per Session. A reload while the Haunted_Screen is shown SHALL follow purpose-board Requirement 9 criterion 6 (Dial_Screen, NO ANSWER kept).
 11. THE fee shown on the Haunted_Screen SHALL equal the fee of the Session_Record, which is computed from the Planned_Duration (core Requirement 7 criterion 6).
+12. WHEN the BLUELINE tab loads with a stored Active_Session_State whose scheduled end time has already passed (for example, iPhone Safari reloads a paused tab), THE BLUELINE SHALL end that Session as a Time_Up with the end timestamp and fee from the scheduled end (core Requirement 11 criterion 3), treat that load as the moment the user first sees it, and, when criterion 1 holds, show the Haunted_Screen and then the NO_CARRIER_Screen with the Message (if any) and the Purpose check.
+13. WHEN the BLUELINE tab loads after the NO_CARRIER_Screen of a Session was already reached, with or without an answer (no Active_Session_State is stored), THE BLUELINE SHALL show the Dial_Screen, keep the stored Outcome (NO ANSWER if the user did not answer), and SHALL NOT show the Haunted_Screen, the Message, or the Purpose check for that Session again (purpose-board Requirement 9 criterion 6).
 
 ### Requirement 10: Screens without a Mockup
 

@@ -70,6 +70,25 @@ Rules:
 - A reload while haunted: the active state was already cleared at `endSession`, so the reload goes to the Dial_Screen and the record stays NO ANSWER (Req 9.10).
 - `ended` gains `seenAt: number | null` and `shownAt: number | null` (when NO CARRIER was first shown, for `SENT <MM:SS> AGO`). Neither is stored.
 
+### Reloads: two cases (Req 9.12, 9.13)
+
+A reload is told apart only by what is in storage, so the two cases cannot mix:
+
+**(가) The active state is still stored and its scheduled end has passed.** This is the iPhone Safari case: the tab was paused in the background and the page is loaded again after Time_Up, before any NO CARRIER was handled.
+
+1. `recover(storedActive, now)` ends the Session as a TIME UP with `end = start + plannedSec × 1000` and the fee for the Planned_Duration (unchanged core rule). Its `endSession` effect appends the NO ANSWER record and clears the active state, as before.
+2. The state is ENDED / `nocarrier` with `seenAt = null` and the Message in `ended.memo`.
+3. At boot the tab is visible, so the controller dispatches `SEEN { now: Date.now() }`. The load counts as the moment the user first sees the Session.
+4. If `shouldHaunt(record, now)` holds (Time_Up, Purpose set, `now − end ≥ grace`), the view becomes `haunted`; `ENTER · FACE IT` then shows NO CARRIER with the Message and Y / N. Otherwise NO CARRIER with the Message and Y / N is shown at once.
+
+**(나) NO CARRIER was already reached, with or without an answer.** `endSession` cleared the active state when the Session ended, so nothing is left to recover.
+
+1. `recover(null, now)` returns IDLE: the Dial_Screen.
+2. The stored record keeps its Outcome: NO ANSWER if the user left without answering, DONE or DRIFTED if they answered.
+3. There is no ENDED state, so no `SEEN`, no Haunted_Screen, no Message, and no Y / N for that Session.
+
+Both cases are tested at the reducer level (with `recover` and a fake storage slot) and in the browser (Testing Strategy).
+
 ### Controller changes
 
 - **SEEN**: in `sync()` after entering ENDED, and in `page.onResume`, if `state.phase === 'ENDED' && state.ended.seenAt === null && page.isVisible()`, dispatch `SEEN { now: Date.now() }`. At boot, after `recover`, the same check runs. For a visible Time_Up, the 500 ms final `00:00` frame is shown first and `SEEN` is dispatched when it ends.
@@ -282,6 +301,10 @@ Purpose-board Property 5, extended with `SEEN`, `FACE_IT`, and reloads during th
 
 - **Property tests** (`tests/property/`): `haunt.prop.test.ts` (Properties 1, 2), `ended.prop.test.ts` (Property 3, extending purpose-board Property 13), `memo.prop.test.ts` (Property 4), `display.prop.test.ts` (Properties 5, 7), `summary.prop.test.ts` (Property 6, also in the `new-york` project).
 - **Unit tests** (`tests/unit/`): `lastCall` texts (TODAY / YESTERDAY / date), `FIRST CALL`, `ghostLayout` counts at levels 0, 0.5, 1 and determinism, `modemLines` order, `charCounter` over the limit, `frameFor` keys per view and no Purpose in the bars, contrast table (Req 1.7), commands on `haunted`.
+- **Reload cases** (`tests/unit/reload.test.ts`):
+  - (가) A stored v2 active state with a Purpose and a Message, loaded 15 s after the scheduled end with the 1 MIN (DEMO) duration: `recover` + `SEEN` gives the `haunted` view; the record has `end` = the scheduled end and the 60-second fee; `FACE_IT` gives NO CARRIER with the Message; `ANSWER` writes the Outcome. The same at 5 s after the end gives NO CARRIER directly (within the Grace_Period).
+  - (나) After NO CARRIER was reached (answered and not answered), the fake storage holds no active state; a reload gives IDLE, the stored Outcome is unchanged, and no `SEEN`, haunted view, or Message follows.
+  - The browser check repeats both: (가) by writing an expired active state to `localStorage` and reloading; (나) by reloading on NO CARRIER and on the receipt.
 - **Existing tests**: texts that this spec changes (for example `PRESS ENTER OR TAP TO DIAL`, `TYPE BYE OR PRESS ESC TO HANG UP`, ASCII box output) are updated; behavior assertions stay.
 - **Browser checks** (headless Chrome, 360 / 1280 px, scripts outside the repo): every screen's frame, no horizontal scroll, Display_Face fits, palette-only colors (computed styles), focus outline, Haunted_Screen after a hidden Time_Up with the demo duration (10 s), level growth over 60 s, reduced motion off, then NO CARRIER with the Message; demo timing both ways.
 - **Manual checks** (`docs/manual-checks.md` part D): the open rows of part B and C2, plus the Haunted_Screen on a desktop browser and on iPhone Safari, and a look at the mockups side by side.
@@ -317,8 +340,9 @@ Staying away past Time_Up with the 1 MIN (DEMO) duration (Req 12.5):
 
 The earlier spec files are not changed.
 
-## To Confirm in Design Review
+## Resolved in Design Review
 
-1. **Modem_Log timing.** `ATZ`, `OK`, then the existing `ATDT 0145550199` typed one character at a time, `DIALING...`, `RING... RING...` inside the 4 s handshake, and `CONNECT 2400` when the handshake ends. No change to the sound.
-2. **`₩` with thousands separators everywhere**, including the receipt, not only on the new screens.
-3. **Ghost layout is deterministic** from the Purpose (no randomness), so it looks the same on every render and in tests.
+1. **Modem_Log timing.** Approved: `ATZ`, `OK`, then the existing `ATDT 0145550199` typed one character at a time, `DIALING...`, `RING... RING...` inside the 4 s handshake, and `CONNECT 2400` when the handshake ends. No change to the sound.
+2. **`₩` with thousands separators everywhere.** Approved, including the receipt.
+3. **Ghost layout is deterministic** from the Purpose. Approved.
+4. **Reloads.** Added in review: the two cases (가) and (나) above, each tested.
