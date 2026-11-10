@@ -31,6 +31,7 @@ const PAIRS: [fg: string, bg: string, alpha: number][] = [
   ...blueText.map((fg): [string, string, number] => [fg, 'bg-blue', FAINT]),
   ...blackText.map((fg): [string, string, number] => [fg, 'bg-black', FAINT]),
   ['bar-fg-black', 'bar-cyan', FAINT],
+  ['bar-fg-black', 'yellow', FAINT], // the Purpose_Band
   ['text', 'hangup-red', FAINT],
   ['bg-black', 'text-dim', FAINT],
   ['bg-black', 'text', FAINT],

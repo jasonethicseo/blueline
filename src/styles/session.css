@@ -1,0 +1,81 @@
+/* The Session_Screen (design Req 7). Loaded after entry.css.
+   Class names: .purpose-band, .band-label, .band-text, .session-numbers, .big, .progress, .progress-bar,
+   .session-actions, .action.danger */
+
+.purpose-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  padding: 12px 18px;
+  background: var(--yellow);
+  color: var(--bg-black);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.band-label {
+  font-size: 14px;
+}
+
+.band-text {
+  font-size: 22px;
+}
+
+.session-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 40px;
+  margin-top: 12px;
+}
+
+.big {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.progress-bar {
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  white-space: nowrap;
+}
+
+.session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+/* HANG UP: white on hangup-red. */
+.action.danger {
+  border: 0;
+  background: var(--hangup-red);
+  color: var(--text);
+}
+
+.action.danger:hover,
+.action.danger:focus-visible {
+  background: var(--text);
+  color: var(--hangup-red);
+}
+
+/* Galmuri's block characters are a full em wide: 20 cells of 22 px (480 px) need a wide screen. */
+@media (max-width: 599px) {
+  .progress-bar {
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+}

@@ -90,7 +90,7 @@ Conventions for every task:
   - Titles, Korean hint with its English meaning, cyan labels, fields on black (Message in yellow), live Character_Counter (red over the limit), dashed Sysop_Notice from `lastDays`, the read-only Purpose on the Message_Screen, `ESC · BACK` and `ENTER · NEXT` (`requestSubmit`, so the IME rule still applies).
   - _Requirements: 5.1–5.5, 6.1, 6.2_
 
-- [ ] 7. Session screen
+- [x] 7. Session screen
   - Purpose_Band, two `.display-xl` numbers with their labels, Progress_Bar with a text equivalent, `LEFT · TODAY … CALLS · ₩…`, `ESC · HANG UP` in hangup-red and `OR TYPE BYE`, `● ON LINE` badge. Text-only updates every 250 ms as now.
   - _Requirements: 7.1–7.6, 11.4_
 
