@@ -86,7 +86,7 @@ Conventions for every task:
   - Update the dial unit tests and texts.
   - _Requirements: 4.1–4.8_
 
-- [ ] 6. Purpose and Message screens
+- [x] 6. Purpose and Message screens
   - Titles, Korean hint with its English meaning, cyan labels, fields on black (Message in yellow), live Character_Counter (red over the limit), dashed Sysop_Notice from `lastDays`, the read-only Purpose on the Message_Screen, `ESC · BACK` and `ENTER · NEXT` (`requestSubmit`, so the IME rule still applies).
   - _Requirements: 5.1–5.5, 6.1, 6.2_
 

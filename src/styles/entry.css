@@ -1,0 +1,96 @@
+/* The Dial_Screen, the Purpose_Screen and Message_Screen, and filled Key_Buttons. Loaded after screens.css.
+   Class names: .dial-title, .dial-facts, .cyan, .modem-log, .modem-cmd / -ok / -resp / -connect,
+   .action.fill, .purpose-form, .field-row, .field-yellow, .counter, .over, .readonly-purpose */
+
+/* Dial_Screen (design Req 4): Modem_Log left, BLUELINE box right; the main column comes first in the DOM
+   so it also comes first when the columns stack. */
+.dial-title {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 8px;
+}
+
+.dial-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cyan {
+  color: var(--cyan);
+}
+
+.modem-log {
+  gap: 6px;
+}
+
+.modem-cmd,
+.modem-resp {
+  color: var(--text-dim);
+}
+
+.modem-ok {
+  color: var(--text);
+}
+
+.modem-connect {
+  color: var(--green);
+}
+
+@media (min-width: 600px) {
+  .dial .modem-log {
+    order: -1;
+    width: 260px;
+  }
+}
+
+/* A filled Key_Button (ENTER · DIAL IN, ENTER · NEXT). */
+.action.fill {
+  background: var(--text-dim);
+  color: var(--bg-black);
+}
+
+.action.fill:hover,
+.action.fill:focus-visible {
+  background: var(--text);
+}
+
+.dial .box {
+  width: 100%;
+}
+
+/* Purpose_Screen and Message_Screen (design Req 5, 6). */
+.purpose-form {
+  gap: 12px;
+}
+
+.field-row {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.field-yellow {
+  color: var(--yellow);
+}
+
+/* The Character_Counter sits on black, so red over the limit keeps 4.5:1 (it would be 4.2:1 on blue). */
+.counter {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0 1ch;
+  background: var(--bg-black);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.counter.over {
+  color: var(--red);
+}
+
+.readonly-purpose {
+  padding-left: 1ch;
+  border-left: 4px double var(--text-dim);
+}

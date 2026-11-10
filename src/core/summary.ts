@@ -117,3 +117,12 @@ export function dialLines(history: HistoryStatus | null, now: number): { greetin
     week: `THIS WEEK: ${week.calls} CALLS · ${formatWon(week.fee)} · DONE ${c.done} · DRIFTED ${c.drifted} · NO ANSWER ${c.noAnswer}`,
   };
 }
+
+/** The Sysop_Notice text for the last 7 local calendar days: the Korean line and its English meaning (Req 5.4). */
+export function sysopNotice(history: HistoryStatus | null, now: number): { ko: string; en: string } {
+  const c = lastDays(stored(history), now, 7);
+  return {
+    ko: `최근 7일: 목적을 지킨 접속 ${c.done} / 떠내려간 접속 ${c.drifted}`,
+    en: `LAST 7 DAYS: DONE ${c.done} · DRIFTED ${c.drifted}`,
+  };
+}

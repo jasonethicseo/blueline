@@ -4,7 +4,7 @@ import { CONNECT_TEXT, DIAL_TEXT } from '../../src/core/config';
 import { charCounter, formatWon, modemLines } from '../../src/core/display';
 import { GHOST_ASCII, ghostLayout, hauntLevel, hauntTiming, shouldHaunt } from '../../src/core/haunt';
 import type { SessionRecord } from '../../src/core/record';
-import { dialLines, lastCall, preview, todaySoFar } from '../../src/core/summary';
+import { dialLines, lastCall, preview, sysopNotice, todaySoFar } from '../../src/core/summary';
 
 const at = (y: number, mo: number, d: number, h: number, mi: number) => new Date(y, mo - 1, d, h, mi).getTime();
 
@@ -127,5 +127,22 @@ describe('dialLines (Dial_Screen text)', () => {
         week: 'THIS WEEK: 0 CALLS · ₩0 · DONE 0 · DRIFTED 0 · NO ANSWER 0',
       });
     }
+  });
+});
+
+describe('sysopNotice', () => {
+  const now = at(2026, 11, 11, 12, 0);
+  it('counts DONE and DRIFTED in the last 7 local days, today included', () => {
+    const records = [
+      rec(at(2026, 11, 4, 23, 59), { no: 1, outcome: 'DONE' }), // 7 days back: outside
+      rec(at(2026, 11, 5, 0, 0), { no: 2, outcome: 'DONE' }), // the first day inside
+      rec(at(2026, 11, 8, 9, 0), { no: 3, outcome: 'DRIFTED' }),
+      rec(at(2026, 11, 11, 9, 0), { no: 4, outcome: 'NO ANSWER' }),
+    ];
+    expect(sysopNotice({ kind: 'ok', records }, now)).toEqual({
+      ko: '최근 7일: 목적을 지킨 접속 1 / 떠내려간 접속 1',
+      en: 'LAST 7 DAYS: DONE 1 · DRIFTED 1',
+    });
+    expect(sysopNotice(null, now).en).toBe('LAST 7 DAYS: DONE 0 · DRIFTED 0');
   });
 });

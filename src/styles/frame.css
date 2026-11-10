@@ -93,3 +93,14 @@
   .display-l { font-size: 44px; }
   .display-m { font-size: 33px; }
 }
+
+/* Screen titles in the Display_Face, a step below .display-m (multiples of 11 px). */
+.display-s {
+  font-size: 44px;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 599px) {
+  .display-s { font-size: 22px; }
+}
