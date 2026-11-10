@@ -20,6 +20,15 @@
   padding: 6px 16px;
 }
 
+#status-bar,
+#key-bar,
+#message,
+#prompt-form {
+  /* Above the Haunted_Screen ghost layer (z-index 0). */
+  position: relative;
+  z-index: 1;
+}
+
 #status-bar {
   justify-content: space-between;
   background: var(--bar-bg);

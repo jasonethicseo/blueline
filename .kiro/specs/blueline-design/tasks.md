@@ -98,7 +98,7 @@ Conventions for every task:
   - Black theme, `+++ ATH0`, `NO CARRIER` in `.display-xl`, booked / on line / fee line, yellow double Message box with `SENT <MM:SS> AGO` (from `shownAt`), Purpose, question, green and outline answer buttons, Receipt_Preview column with the Post_Number line, the Function_Key_Bar hint. No-Purpose Sessions keep the core move-on.
   - _Requirements: 8.1–8.7_
 
-- [ ] 9. Haunted screen
+- [x] 9. Haunted screen
   - Create `src/screens/haunted.ts` and `src/styles/haunted.css`: ghost layer from `ghostLayout` (aria-hidden, no pointer input), ASCII ghost, strong Scanline_Layer, title in `.display-m` red with a cyan offset, drift lines and the red Purpose box updated each second, billed line, `ENTER · FACE IT`. Flicker only under `prefers-reduced-motion: no-preference`.
   - _Requirements: 9.3–9.8, 9.11, 11.1, 11.2_
 

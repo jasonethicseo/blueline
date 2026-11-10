@@ -39,7 +39,7 @@ const PAIRS: [fg: string, bg: string, alpha: number][] = [
 ];
 
 // Haunted_Screen: its text is under the faint layer; the background also has the strong lines behind the text.
-const HAUNTED = ['text', 'text-dim', 'yellow', 'cyan', 'red'];
+const HAUNTED = ['text', 'text-dim', 'yellow', 'cyan', 'red', 'ghost'];
 
 describe('contrast with the Scanline_Layer', () => {
   it('reads the palette and both scan strengths from crt.css', () => {

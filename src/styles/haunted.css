@@ -1,0 +1,122 @@
+/* The Haunted_Screen (design Req 9). Loaded after session.css. The strong scanlines and the ghosts sit
+   behind the text, so the text keeps 4.5:1 (Req 1.7). Flicker only where motion is welcome (Req 9.8).
+   Class names: .haunted-layer, .haunt-scan, .ghosts, .ghost, .ghost-ascii, .haunted-content, .haunted-title,
+   .ghost-line, .haunted-said, .said-text, .action.white */
+
+.haunted-layer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.haunt-scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to bottom, rgb(0 0 0 / var(--scan-strong)) 0 1px, transparent 1px 3px);
+}
+
+.ghost {
+  position: absolute;
+  left: calc(var(--x) * 1%);
+  top: calc(var(--y) * 1%);
+  transform: rotate(calc(var(--r) * 1deg));
+  font-size: calc(var(--s) * 1px * var(--ghost-scale, 1));
+  letter-spacing: calc(var(--ls) * 1px);
+  opacity: var(--o);
+  color: var(--ghost);
+  white-space: nowrap;
+  /* The red / cyan chromatic offset is the one shadow BLUELINE allows (Req 1.2). */
+  text-shadow: 2px 0 var(--red), -2px 0 var(--cyan);
+}
+
+.ghost-ascii {
+  position: absolute;
+  left: 75%;
+  top: 22%;
+  margin: 0;
+  font: inherit;
+  font-size: calc(18px * var(--ghost-scale, 1));
+  line-height: 1.1;
+  color: var(--ghost);
+  opacity: var(--o);
+}
+
+.haunted-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.haunted-title {
+  margin: 0;
+  font-weight: 400;
+  color: var(--red);
+  text-shadow: 3px 0 var(--cyan);
+}
+
+.ghost-line {
+  color: var(--ghost);
+}
+
+.haunted-said {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: min(100%, 460px);
+  padding: 12px 16px;
+  border: 2px solid var(--red);
+}
+
+.said-text {
+  font-size: 22px;
+  font-weight: 700;
+  text-shadow: 2px 0 var(--red), -2px 0 var(--cyan);
+}
+
+.action.white {
+  border: 0;
+  background: var(--text);
+  color: var(--bg-black);
+}
+
+.action.white:hover,
+.action.white:focus-visible {
+  background: var(--text-dim);
+}
+
+@media (max-width: 599px) {
+  .haunted-layer {
+    --ghost-scale: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .haunted-title {
+    animation: title-flicker 3s steps(1) infinite;
+  }
+
+  .ghosts {
+    animation: ghost-flicker 2.3s steps(1) infinite;
+  }
+
+  @keyframes title-flicker {
+    0%, 100% { opacity: 1; }
+    43% { opacity: 0.8; }
+    45% { opacity: 1; }
+    78% { opacity: 0.9; }
+    79% { opacity: 1; }
+  }
+
+  @keyframes ghost-flicker {
+    0%, 100% { opacity: 1; }
+    30% { opacity: 0.55; }
+    33% { opacity: 1; }
+    71% { opacity: 0.7; }
+    73% { opacity: 1; }
+  }
+}

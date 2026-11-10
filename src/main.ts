@@ -4,6 +4,7 @@ import './styles/frame.css';
 import './styles/screens.css';
 import './styles/entry.css';
 import './styles/session.css';
+import './styles/haunted.css';
 import { viewOf } from './core/commands';
 import { createController, type Controller } from './app/controller';
 import { attachInput, usedPointer } from './app/input';
