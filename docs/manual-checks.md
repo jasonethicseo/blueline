@@ -98,7 +98,10 @@ Screenshots of the receipt, NO CARRIER, and the Board at 360 px and 1280 px were
 | Hangul IME: Esc while composing does not go back | Esc during composition on the Purpose_Screen | 3.6 | macOS Chrome: pass. macOS Safari: pass (reported as working). |
 | Hangul IME on the Message_Screen | Same as above with `다 봤으면 끄자` | 3.6, 3.7 | macOS Chrome: pass. macOS Safari: pass (reported as working). |
 | Hangul IME on macOS Safari | Same three checks | 3.6, 3.7 | See the three rows above. |
-| Hangul IME on iPhone Safari | Same three checks, via `npx vite preview --host` | 3.6, 3.7 | |
-| Message and Purpose check after a hidden-tab Time_Up | Stay in the destination tab for the 1 MIN session | 4.2, 5.1 | |
-| Full 1 MIN demo with a short Purpose under 150 s | Time it on a laptop | 12.1 | |
-| DevTools Network shows no request on the new screens | Watch the Network panel | 11.7 | |
+| Hangul IME on iPhone Safari | Same three checks, via `npx vite preview --host` | 3.6, 3.7 | Moved to the next spec's manual checks |
+| Message and Purpose check after a hidden-tab Time_Up | Stay in the destination tab for the 1 MIN session | 4.2, 5.1 | Moved to the next spec's manual checks |
+| Full 1 MIN demo with a short Purpose under 150 s | Time it on a laptop | 12.1 | Moved to the next spec's manual checks |
+| DevTools Network shows no request on the new screens | Watch the Network panel | 11.7 | Moved to the next spec's manual checks |
+
+The four rows above, and the open rows of part B, are checked once on the final screens of the
+design spec, so the redesign does not make them stale.

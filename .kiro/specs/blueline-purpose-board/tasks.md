@@ -183,8 +183,8 @@ Conventions for every task:
   - Ask the user if questions come up before the manual checks.
   - _Requirements: 10.1, 12.2_
 
-- [ ] 8. Manual checks and browser check
-  - Open: the C2 rows for iPhone Safari IME, the hidden-tab Time_Up, the 150 s demo timing, and the Network panel are still blank. Everything else in part C is recorded.
+- [x] 8. Manual checks and browser check
+  - Moved to the manual-check task of the next (design) spec, decided 2026-11-10: the C2 rows for iPhone Safari IME, the hidden-tab Time_Up, the 150 s demo timing, and the Network panel. They will be checked once on the final screens. Everything else in part C is recorded.
   - [x] 8.1 Add part C to `docs/manual-checks.md`
     - Hangul IME on macOS Chrome, macOS Safari, and iPhone Safari: a Purpose ending in a composing syllable is submitted once with the last syllable, and Esc while composing does not go back.
     - 360 px with a 60-Hangul Purpose (Session_Screen, NO CARRIER with the check, receipt, Board) and a 120-Hangul Message (NO CARRIER): no horizontal scroll. The Board shows `Y`/`N`/`?` below 600 px and the words at 600 px and wider. The receipt count lines wrap only at ` · `.
