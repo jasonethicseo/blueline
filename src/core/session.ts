@@ -17,7 +17,7 @@ export * from './session-state';
 const USER_INPUTS = new Set<Event['type']>([
   'DIAL', 'DIAL_SKIP', 'MENU_KEY', 'GO', 'URL_SUBMIT', 'BACK', 'CONFIRM',
   'PURPOSE_SUBMIT', 'MEMO_SUBMIT', 'TYPING', 'ANSWER', 'BOARD_PAGE',
-  'LINK_OPENED', 'HANG_UP', 'NOCARRIER_DONE', 'DIAL_AGAIN',
+  'LINK_OPENED', 'HANG_UP', 'NOCARRIER_DONE', 'DIAL_AGAIN', 'FACE_IT',
 ]);
 
 const preset = (label: PresetLabel): Destination => ({ label, url: PRESETS[label] });

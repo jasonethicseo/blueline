@@ -1,10 +1,11 @@
 // Feature: blueline-purpose-board, Property 13: Ended screens move only forward, and ended is final
 // Feature: blueline-purpose-board, Property 16: Only listed transitions happen (the ENDED views)
+// Feature: blueline-design, Property 3: Ended views move forward, and the Haunted_Screen appears at most once
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import { recover } from '../../src/core/recover';
 import type { AppState, Event } from '../../src/core/session';
-import { BASE, finalState, replay, tail, toEnded } from './session-arb';
+import { BASE, finalState, replay, tail, toEnded, toTimeUp } from './session-arb';
 
 /** NO CARRIER for a Session with a Purpose (it asks PURPOSE ACHIEVED?). */
 const askingStart = (): AppState => finalState(toEnded);
@@ -70,6 +71,52 @@ describe('Property 13 and Property 16: NO CARRIER moves only forward to the rece
     // The generators must leave NO CARRIER both ways, or the property says little.
     expect(left.asking).toBeGreaterThan(0);
     expect(left.legacy).toBeGreaterThan(0);
+  });
+
+  it('Property 3: views move forward, and the Haunted_Screen appears at most once, only after the first SEEN', () => {
+    let hauntedRuns = 0;
+    fc.assert(
+      fc.property(fc.boolean(), tail(60), (timeUp, events) => {
+        const start = finalState(timeUp ? toTimeUp : toEnded);
+        const id = start.session?.id as number;
+        const fee = start.ended?.record.fee;
+        const mine = (s: AppState) => s.phase === 'ENDED' && s.session?.id === id;
+        let entered = 0;
+        let seenBefore = false;
+
+        for (const s of replay(events, start)) {
+          if (!mine(s.before)) continue;
+          const from = s.before.ended?.view;
+          const to = mine(s.after) ? s.after.ended?.view : undefined;
+          if (!mine(s.after)) continue;
+          expect(s.after.ended?.record.fee).toBe(fee);
+          if (from !== 'receipt' && s.event.type !== 'ANSWER' && s.event.type !== 'NOCARRIER_DONE') {
+            expect(s.after.ended?.record.outcome).toBe('NO ANSWER');
+          }
+          if (to === 'haunted' && from !== 'haunted') {
+            entered += 1;
+            expect(from).toBe('nocarrier');
+            expect(s.event.type).toBe('SEEN');
+            expect(s.before.ended?.seenAt).toBeNull();
+            expect(seenBefore).toBe(false); // the first SEEN decides
+            expect(s.effects).toEqual([]);
+          }
+          if (from === 'haunted') {
+            // Only FACE_IT leaves, and it leaves to NO CARRIER with no effects.
+            expect(to === 'haunted' || (to === 'nocarrier' && s.event.type === 'FACE_IT')).toBe(true);
+            expect(s.effects).toEqual([]);
+            if (to === 'haunted') expect(s.after.ended).toEqual(s.before.ended);
+          }
+          if (from === 'receipt') expect(to).toBe('receipt');
+          if (s.event.type === 'SEEN') seenBefore = true;
+        }
+        expect(entered).toBeLessThanOrEqual(1);
+        if (!timeUp) expect(entered).toBe(0); // a Hang_Up is never haunted
+        hauntedRuns += entered;
+      }),
+      { numRuns: 500 },
+    );
+    expect(hauntedRuns).toBeGreaterThan(0);
   });
 
   it('an answer is the only Event that writes the Outcome', () => {

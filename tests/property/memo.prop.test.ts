@@ -1,4 +1,5 @@
 // Feature: blueline-purpose-board, Property 5: A Message is shown at most once
+// Feature: blueline-design, Property 4: The Message is still shown at most once
 // Reloads are modelled with a fake storage slot for the Active_Session_State: saveActive writes
 // it, endSession and clearActive empty it, and a reload replaces the state with recover().
 // Tab visibility only changes when the shell renders and dispatches TICK, so TICK events at
@@ -8,7 +9,7 @@ import fc from 'fast-check';
 import { serializeActive } from '../../src/core/record';
 import { recover } from '../../src/core/recover';
 import { initialState, step, type AppState, type Effect, type Event } from '../../src/core/session';
-import { BASE, anyEvent, time, toConnected, toEnded } from './session-arb';
+import { BASE, anyEvent, time, toConnected, toEnded, toTimeUp } from './session-arb';
 
 type Ev = Event | { type: 'RELOAD'; now: number };
 
@@ -16,11 +17,15 @@ const ev: fc.Arbitrary<Ev> = fc.oneof(
   { weight: 6, arbitrary: anyEvent },
   { weight: 1, arbitrary: time.map((now): Ev => ({ type: 'RELOAD', now })) },
 );
-const start = fc.constantFrom<Event[]>([], toConnected, toEnded);
+const start = fc.constantFrom<Event[]>([], toConnected, toEnded, toTimeUp);
 const script = fc.tuple(start, fc.array(ev, { maxLength: 60 })).map(([p, t]): Ev[] => [...p, ...t]);
 
-/** Does this state show a Message on the NO_CARRIER_Screen? */
-const shows = (s: AppState) => s.phase === 'ENDED' && s.ended?.view === 'nocarrier' && s.ended.memo !== null;
+/**
+ * Does this state show a Message on the NO_CARRIER_Screen? Only after SEEN (the user has seen the
+ * ended Session) and never on the Haunted_Screen, whose view is not `nocarrier`.
+ */
+const shows = (s: AppState) =>
+  s.phase === 'ENDED' && s.ended?.view === 'nocarrier' && s.ended.memo !== null && s.ended.seenAt !== null;
 
 describe('Property 5: A Message is shown at most once', () => {
   it('for every Session, at most one NO_CARRIER_Screen shows its Message, and none after its receipt', () => {
@@ -88,9 +93,34 @@ describe('Property 5: A Message is shown at most once', () => {
         if (fx.type === 'endSession') stored = null;
       }
     }
+    state = step(state, { type: 'SEEN', now: BASE + 6_000 }).state;
     expect(shows(state)).toBe(true);
     const after = recover(stored, BASE + 60_000);
     expect(after.state.phase).toBe('IDLE');
     expect(after.effects).toEqual([]);
+  });
+});
+
+describe('Property 4: The Message is still shown at most once (with SEEN, FACE_IT, and reloads)', () => {
+  it('the Haunted_Screen never shows the Message, and a reload while haunted shows the Dial_Screen', () => {
+    let state = initialState();
+    let stored: string | null = null;
+    for (const e of toTimeUp) {
+      const r = step(state, e);
+      state = r.state;
+      for (const fx of r.effects) {
+        if (fx.type === 'saveActive') stored = serializeActive(fx.active);
+        if (fx.type === 'endSession') stored = null;
+      }
+    }
+    expect(shows(state)).toBe(false);
+    state = step(state, { type: 'SEEN', now: BASE + 120_000 }).state;
+    expect(state.ended?.view).toBe('haunted');
+    expect(shows(state)).toBe(false);
+    const after = recover(stored, BASE + 130_000);
+    expect(after.state.phase).toBe('IDLE');
+    expect(after.state.ended).toBeNull();
+    state = step(state, { type: 'FACE_IT', now: BASE + 125_000 }).state;
+    expect(shows(state)).toBe(true);
   });
 });

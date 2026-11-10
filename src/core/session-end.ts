@@ -56,7 +56,7 @@ export function endSession(
   return {
     state: {
       ...state, phase: 'ENDED', message: null, session: { ...session, memo: null },
-      ended: { record, view: 'nocarrier', memo: session.memo },
+      ended: { record, view: 'nocarrier', memo: session.memo, seenAt: null, shownAt: null },
     },
     effects,
   };

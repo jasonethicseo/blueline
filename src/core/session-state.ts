@@ -10,6 +10,8 @@ export const MSG_INVALID_URL = 'INVALID URL';
 export const MSG_INVALID_SCHEME = 'INVALID URL - HTTP OR HTTPS ONLY';
 /** Any input other than an answer while NO CARRIER asks PURPOSE ACHIEVED? (Req 5.6). */
 export const MSG_PRESS_Y_OR_N = 'PRESS Y OR N';
+/** Any input other than Enter on the Haunted_Screen (design Req 9.9). */
+export const MSG_PRESS_ENTER_FACE_IT = 'PRESS ENTER TO FACE IT';
 
 export type Phase = 'IDLE' | 'DIALING' | 'SELECT_DEST' | 'SET_PURPOSE' | 'SELECT_DURATION' | 'CONNECTED' | 'ENDED';
 
@@ -52,8 +54,16 @@ export interface AppState {
   /**
    * ENDED only. `memo` is the Session's Message while NO CARRIER shows it; it is set to null
    * when NO CARRIER is left, and nothing else holds it, so it is shown at most once (Req 4.5).
+   * `seenAt` is when the user first saw the ended Session (null until `SEEN`); `shownAt` is when
+   * NO CARRIER was first shown (null while haunted or unseen). Neither is stored.
    */
-  ended: { record: NewRecord; view: 'nocarrier' | 'receipt'; memo: string | null } | null;
+  ended: {
+    record: NewRecord;
+    view: 'haunted' | 'nocarrier' | 'receipt';
+    memo: string | null;
+    seenAt: number | null;
+    shownAt: number | null;
+  } | null;
 }
 
 export type Event =
@@ -65,7 +75,11 @@ export type Event =
   | { type: 'TICK'; now: number } | { type: 'HANG_UP'; now: number }
   | { type: 'NOCARRIER_DONE' } | { type: 'ANSWER'; yes: boolean } | { type: 'DIAL_AGAIN' }
   | { type: 'BOARD_LOADED'; history: HistoryStatus } | { type: 'BOARD_PAGE'; dir: 'next' | 'prev' }
-  | { type: 'MESSAGE'; text: string | null };
+  | { type: 'MESSAGE'; text: string | null }
+  /** The user first sees an ended Session (the tab is visible, resumed, or reloaded). Not a user input. */
+  | { type: 'SEEN'; now: number }
+  /** Enter on the Haunted_Screen. */
+  | { type: 'FACE_IT'; now: number };
 
 export type Effect =
   | { type: 'playHandshake' } | { type: 'stopSound' } | { type: 'playNoCarrier' }

@@ -37,20 +37,20 @@ Conventions for every task:
     - `lastCall` (TODAY / YESTERDAY / date, `null` when empty), `ghostLayout` at levels 0, 0.5, 1 and the same layout twice, `modemLines` order and `CONNECT 2400` last, `charCounter` over the limit, `formatWon(1840)` = `₩1,840`.
     - _Requirements: 4.2, 4.5, 5.3, 9.5_
 
-- [ ] 2. The Haunted view in the ENDED state, and the two reload cases
-  - [ ] 2.1 Extend `src/core/session-state.ts` and `src/core/session-ended.ts`
+- [x] 2. The Haunted view in the ENDED state, and the two reload cases
+  - [x] 2.1 Extend `src/core/session-state.ts` and `src/core/session-ended.ts`
     - `ended.view` gains `'haunted'`; `ended` gains `seenAt` and `shownAt`. Events `SEEN { now }` and `FACE_IT { now }` (`FACE_IT` is a user input). `SEEN` only while `nocarrier` with `seenAt === null`: haunted if `shouldHaunt`, else `shownAt = now`. `FACE_IT` only from `haunted`. Nothing else leaves `haunted`.
     - _Requirements: 9.1, 9.2, 9.9, 9.10, 9.11_
-  - [ ] 2.2 Update `src/core/commands.ts`
+  - [x] 2.2 Update `src/core/commands.ts`
     - `ViewName` `haunted`; `viewOf`; `help` lines `ENTER - FACE IT`; other input on `haunted` → `PRESS ENTER TO FACE IT`.
     - _Requirements: 9.9, 11.2 (purpose-board)_
-  - [ ] 2.3 Update the session generators and write property tests
+  - [x] 2.3 Update the session generators and write property tests
     - `session-arb.ts` gains `SEEN` and `FACE_IT` at times around the scheduled end, and a demo-duration path.
     - **Property 3: Ended views move forward, and the Haunted_Screen appears at most once** (extend `tests/property/ended.prop.test.ts`).
     - **Property 4: The Message is still shown at most once** (extend `tests/property/memo.prop.test.ts` with `SEEN`, `FACE_IT`, and reloads while haunted).
     - Keep purpose-board Properties 13 and 16 passing with the new view.
     - **Validates: Requirements 8.7, 9.9, 9.10, 9.11**
-  - [ ] 2.4 Write the reload tests in `tests/unit/reload.test.ts`
+  - [x] 2.4 Write the reload tests in `tests/unit/reload.test.ts`
     - (가) An expired v2 active state with a Purpose and a Message, demo duration, loaded 15 s after the scheduled end: `recover` + `SEEN` → `haunted`; the record's `end` is the scheduled end and its fee is the 60-second fee; `FACE_IT` → NO CARRIER with the Message; `ANSWER` → `saveOutcome`. Loaded 5 s after the end → NO CARRIER directly.
     - (나) After NO CARRIER was reached, answered and not answered: the fake storage has no active state; the reload gives IDLE; the stored Outcome is unchanged; no `SEEN`, haunted view, or Message follows.
     - _Requirements: 9.12, 9.13_

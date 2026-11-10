@@ -83,3 +83,13 @@ describe('help lines (Req 12.4, 12.9)', () => {
     expect(acceptedCommands('confirm')).toEqual(expect.arrayContaining(['ENTER - CONNECT', '0 - BACK', 'ESC - BACK']));
   });
 });
+
+describe('the Haunted_Screen (design Req 9.9)', () => {
+  it('help lists FACE IT, other input says PRESS ENTER TO FACE IT, and empty Enter is left to the shell', () => {
+    expect(resolveInput('haunted', '')).toEqual({ kind: 'none' });
+    expect(resolveInput('haunted', 'help')).toEqual({ kind: 'help', lines: ['ENTER - FACE IT', 'HELP - SHOW COMMANDS'] });
+    for (const text of ['y', '1', 'bye', 'zz', 'go yt']) {
+      expect(resolveInput('haunted', text)).toEqual({ kind: 'message', text: 'PRESS ENTER TO FACE IT' });
+    }
+  });
+});

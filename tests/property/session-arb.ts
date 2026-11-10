@@ -33,6 +33,8 @@ export const anyEvent: fc.Arbitrary<Event> = fc.oneof(
   fc.constantFrom<HistoryStatus>({ kind: 'ok', records: [] }, { kind: 'reset', records: [] }, { kind: 'unavailable' })
     .map((history): Event => ({ type: 'BOARD_LOADED', history })),
   fc.constantFrom('X', null).map((text): Event => ({ type: 'MESSAGE', text })),
+  time.map((now): Event => ({ type: 'SEEN', now })),
+  time.map((now): Event => ({ type: 'FACE_IT', now })),
 );
 
 /** Scripted paths to each phase, so random tails start from every reachable state. */
@@ -46,6 +48,8 @@ const toConfirm: Event[] = [...toDuration, { type: 'MENU_KEY', n: 1 }];
 const toPending: Event[] = [...toConfirm, { type: 'CONFIRM' }];
 export const toConnected: Event[] = [...toPending, { type: 'OPENED', now: BASE }];
 export const toEnded: Event[] = [...toConnected, { type: 'HANG_UP', now: BASE + 5_000 }];
+/** Time_Up of the 1 MIN (DEMO) Session with a Purpose: the line drops at BASE + 60 s. */
+export const toTimeUp: Event[] = [...toConnected, { type: 'TICK', now: BASE + 60_000 }];
 const toReceipt: Event[] = [...toEnded, { type: 'ANSWER', yes: true }];
 
 export const prefix = fc.constantFrom<Event[]>(

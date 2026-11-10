@@ -1,6 +1,6 @@
 // Command_Prompt parsing and per-screen command rules (core Requirement 12; Req 5.3–5.6). Pure.
 import { DURATIONS, type Alias } from './config';
-import { MSG_PRESS_Y_OR_N, type AppState } from './session-state';
+import { MSG_PRESS_ENTER_FACE_IT, MSG_PRESS_Y_OR_N, type AppState } from './session-state';
 
 export type Command =
   | { kind: 'number'; n: number }
@@ -31,7 +31,7 @@ export type ParseResult =
  */
 export type ViewName =
   | 'dial' | 'destination' | 'urlEntry' | 'board' | 'purpose' | 'memo' | 'duration' | 'confirm' | 'session'
-  | 'nocarrier' | 'nocarrierCheck' | 'receipt';
+  | 'haunted' | 'nocarrier' | 'nocarrierCheck' | 'receipt';
 
 /** Which screen the state shows; decides accepted commands and key handling. */
 export function viewOf(state: AppState): ViewName {
@@ -50,6 +50,7 @@ export function viewOf(state: AppState): ViewName {
       return 'session';
     case 'ENDED':
       if (state.ended?.view === 'receipt') return 'receipt';
+      if (state.ended?.view === 'haunted') return 'haunted';
       return state.ended?.record.purpose ? 'nocarrierCheck' : 'nocarrier';
   }
 }
@@ -100,6 +101,8 @@ export function acceptedCommands(view: ViewName): string[] {
       return ['ENTER - CONNECT', '0 - BACK', 'ESC - BACK', 'BACK - DURATION MENU', HELP_LINE];
     case 'session':
       return ['BYE - HANG UP', 'ESC - HANG UP', HELP_LINE];
+    case 'haunted':
+      return ['ENTER - FACE IT', HELP_LINE];
     case 'nocarrier':
       return ['ENTER - SHOW RECEIPT', HELP_LINE];
     case 'nocarrierCheck':
@@ -133,6 +136,7 @@ export function isAccepted(view: ViewName, command: Command): boolean {
     case 'dial':
     case 'purpose':
     case 'memo':
+    case 'haunted':
     case 'nocarrier':
       return false;
   }
@@ -156,6 +160,11 @@ export function resolveInput(view: ViewName, text: string): InputAction {
     if (r.type === 'command' && r.command.kind === 'help') return { kind: 'help', lines: acceptedCommands(view) };
     if (r.type === 'command' && isAccepted(view, r.command)) return { kind: 'command', command: r.command };
     return { kind: 'message', text: MSG_PRESS_Y_OR_N };
+  }
+  // Empty Enter faces it (the shell's default action); everything else but `help` is refused.
+  if (view === 'haunted' && r.type !== 'empty') {
+    if (r.type === 'command' && r.command.kind === 'help') return { kind: 'help', lines: acceptedCommands(view) };
+    return { kind: 'message', text: MSG_PRESS_ENTER_FACE_IT };
   }
   switch (r.type) {
     case 'empty':
