@@ -55,18 +55,18 @@ Conventions for every task:
     - (나) After NO CARRIER was reached, answered and not answered: the fake storage has no active state; the reload gives IDLE; the stored Outcome is unchanged; no `SEEN`, haunted view, or Message follows.
     - _Requirements: 9.12, 9.13_
 
-- [ ] 3. Shell: SEEN, the stored-history snapshot, and the view model
-  - [ ] 3.1 Create `src/app/ended.ts` and update `src/app/controller.ts`
+- [x] 3. Shell: SEEN, the stored-history snapshot, and the view model
+  - [x] 3.1 Create `src/app/ended.ts` and update `src/app/controller.ts`
     - Dispatch `SEEN` the first time an ENDED Session is visible: after the final `00:00` frame, on resume, and at boot after `recover`. The 1 s haunt render tick while `haunted`. The NO CARRIER timer (no Purpose) only after `SEEN`.
     - Keep the `stored` history snapshot (boot, IDLE, SET_PURPOSE, connect, `historyWritten`).
     - _Requirements: 9.1, 9.4, 9.12, 4.8, 8.3_
-  - [ ] 3.2 Update `src/screens/view.ts`, `src/app/keys.ts`, and `src/app/input.ts`
+  - [x] 3.2 Update `src/screens/view.ts`, `src/app/keys.ts`, and `src/app/input.ts`
     - `ViewModel` gains `now`, `stored`, `dialElapsedMs`; `Handlers` gains `faceIt`. Enter on `haunted` → `faceIt`; Escape on `haunted` does nothing. `won()` is replaced by `formatWon` (all screens).
     - _Requirements: 9.9, 12.1_
-  - [ ] 3.3 App version
+  - [x] 3.3 App version
     - `__APP_VERSION__` from `package.json` through Vite `define` in `vite.config.ts` and `vitest.config.ts`; `src/env.d.ts`.
     - _Requirements: 2.2_
-  - [ ] 3.4 Update tests whose text changed (`₩` formatting) and add unit tests for SEEN timing that do not need the DOM.
+  - [x] 3.4 Update tests whose text changed (`₩` formatting) and add unit tests for SEEN timing that do not need the DOM.
     - _Requirements: 12.2_
 
 - [ ] 4. Screen frame and shared styles

@@ -2,7 +2,8 @@
 import { DURATIONS, FEE_RATE, MAX_URL_LENGTH } from '../core/config';
 import type { AppState } from '../core/session';
 import { box } from './box';
-import { el, item, line, mount, won, type ViewModel } from './view';
+import { formatWon } from '../core/display';
+import { el, item, line, mount, type ViewModel } from './view';
 
 const FICTIONAL = 'FICTIONAL CURRENCY - NO MONETARY VALUE';
 
@@ -48,7 +49,7 @@ function durationMenu(state: AppState, view: ViewModel): Node[] {
   return [
     line(`DESTINATION: ${state.destination?.label ?? ''}`, 'title'),
     box(DURATIONS.map((d) => item(`${d.key}. ${d.label}`, pick(d.key)))),
-    line(`${won(FEE_RATE)} PER STARTED MINUTE`),
+    line(`${formatWon(FEE_RATE)} PER STARTED MINUTE`),
     line(FICTIONAL, 'dim'),
     item('0. BACK', () => view.on.back(), 'action'),
   ];

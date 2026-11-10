@@ -13,6 +13,7 @@ import * as page from '../platform/page';
 import * as storage from '../platform/storage';
 import type { Handlers, ViewModel } from '../screens/view';
 import { runEffect, type EffectHost } from './effects';
+import { createHauntTicker, refreshStored, unseen } from './ended';
 import { createKeys } from './keys';
 
 export interface Controller {
@@ -37,6 +38,7 @@ export function createController(render: (c: Controller) => void): Controller {
   let busy = false;
   let dialStart = 0;
   let history: HistoryStatus | null = null;
+  let stored: HistoryStatus | null = null;
   let receipt: ReceiptModel | null = null;
   let finalUntil = 0;
   let raf = 0;
@@ -58,13 +60,19 @@ export function createController(render: (c: Controller) => void): Controller {
       // Runs whether or not audio started, so a silent dial still connects (Req 1.9).
       later('handshake', TIMING.handshakeMs + 50, () => dispatch({ type: 'HANDSHAKE_DONE' }));
     },
-    historyWritten: (h) => { history = keepReset(history, h); },
+    historyWritten: (h) => { history = keepReset(history, h); stored = history; },
   };
   const run = (fx: Effect) => {
     try { runEffect(fx, host); } catch { /* one failing effect must not stop the flow (Req 13.2) */ }
   };
 
+  // SEEN: the tab is visible and the user has not seen this ended Session yet (design Req 9.1).
+  const see = () => { if (unseen(state) && page.isVisible()) dispatch({ type: 'SEEN', now: Date.now() }); };
+  const tickHaunt = createHauntTicker(() => paint());
+
   function sync(prev: AppState, next: AppState): void {
+    stored = refreshStored(prev, next, stored);
+    tickHaunt(next);
     if (next.phase !== 'DIALING') { clear('handshake'); clear('menu'); }
     else if (next.dial.connectShown && !t.menu) later('menu', TIMING.connectToMenuMs, () => dispatch({ type: 'SHOW_MENU' }));
     if (next.phase === 'DIALING' && !next.dial.connectShown && !raf) startTyping();
@@ -84,8 +92,8 @@ export function createController(render: (c: Controller) => void): Controller {
 
     if (prev.phase === 'CONNECTED' && next.phase === 'ENDED' && next.ended?.record.reason === 'TIME UP' && page.isVisible()) {
       finalUntil = Date.now() + TIMING.finalFrameMs;
-      later('final', TIMING.finalFrameMs, paint);
-    }
+      later('final', TIMING.finalFrameMs, () => { see(); paint(); });
+    } else if (next.phase === 'ENDED' && prev.phase !== 'ENDED') see();
     const prevView = prev.phase === 'ENDED' ? prev.ended?.view : undefined;
     const nextView = next.phase === 'ENDED' ? next.ended?.view : undefined;
     if (nextView !== 'nocarrier') clear('noCarrier');
@@ -99,7 +107,7 @@ export function createController(render: (c: Controller) => void): Controller {
   // Only for a Session without a Purpose: with one, the screen waits for Y or N (Req 5.2, 5.9).
   function paint(): void {
     render(api);
-    const showing = viewOf(state) === 'nocarrier' && !finalFrame() && page.isVisible();
+    const showing = viewOf(state) === 'nocarrier' && state.ended?.seenAt != null && !finalFrame() && page.isVisible();
     if (!showing) clear('noCarrier');
     else if (!t.noCarrier) later('noCarrier', TIMING.noCarrierMs, () => handlers.noCarrierDone());
   }
@@ -144,6 +152,9 @@ export function createController(render: (c: Controller) => void): Controller {
       remainingSec: rec ? rec.plannedSec - rec.actualSec : s ? remainingSeconds(s.start, now, s.plannedSec) : 0,
       fee: fee(elapsed),
       receipt,
+      now,
+      stored,
+      dialElapsedMs: dialStart ? now - dialStart : 0,
       on: handlers,
     };
   }
@@ -161,6 +172,7 @@ export function createController(render: (c: Controller) => void): Controller {
     linkOpened: () => dispatch({ type: 'LINK_OPENED', now: Date.now() }),
     hangUp: () => dispatch({ type: 'HANG_UP', now: Date.now() }),
     noCarrierDone: () => dispatch({ type: 'NOCARRIER_DONE' }),
+    faceIt: () => dispatch({ type: 'FACE_IT', now: Date.now() }),
     // Not during the held 00:00 frame, so the user has seen the question (Req 5.1).
     answer: (yes) => { if (!finalFrame()) dispatch({ type: 'ANSWER', yes }); },
     page: (dir) => dispatch({ type: 'BOARD_PAGE', dir }),
@@ -172,7 +184,7 @@ export function createController(render: (c: Controller) => void): Controller {
   page.onResume(() => {
     page.stopTitleFlash();
     if (state.phase === 'CONNECTED') dispatch({ type: 'TICK', now: Date.now() });
-    else paint();
+    else { see(); paint(); }
   });
 
   const api: Controller = {
@@ -181,6 +193,7 @@ export function createController(render: (c: Controller) => void): Controller {
   };
 
   // Boot from storage (Req 11, 14.3).
+  stored = storage.loadHistory();
   const boot = recover(storage.loadActive(), Date.now());
   const prev = state;
   state = boot.state;

@@ -10,6 +10,7 @@ import * as purpose from './screens/purpose';
 import * as board from './screens/board';
 import * as confirm from './screens/confirm';
 import * as session from './screens/session';
+import * as haunted from './screens/haunted';
 import * as nocarrier from './screens/nocarrier';
 import * as receipt from './screens/receipt';
 
@@ -33,6 +34,7 @@ function route(c: Controller): void {
     case 'memo': return purpose.render(screen, state, view);
     case 'confirm': return confirm.render(screen, state, view);
     case 'session': return session.render(screen, state, view);
+    case 'haunted': return haunted.render(screen, state, view);
     case 'nocarrier':
     case 'nocarrierCheck': return nocarrier.render(screen, state, view);
     case 'receipt': return receipt.render(screen, state, view);

@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitest/config';
+import pkg from './package.json' with { type: 'json' };
 
 // Tests run in a fixed time zone so day/week boundaries are reproducible.
 // The history property test runs a second time in a zone with daylight saving.
 export default defineConfig({
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   test: {
     pool: 'forks',
     passWithNoTests: true,

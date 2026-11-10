@@ -4,7 +4,8 @@ import { countLine } from '../core/history';
 import { formatMMSS } from '../core/time';
 import type { AppState } from '../core/session';
 import { box } from './box';
-import { el, item, line, mount, pair, won, type ViewModel } from './view';
+import { formatWon } from '../core/display';
+import { el, item, line, mount, pair, type ViewModel } from './view';
 
 /** A box row indented under its label, for text that may wrap (Purpose, Outcome counts). */
 const indented = (text: string, cls = ''): HTMLElement => el('span', `box-indent ${cls}`.trim(), text);
@@ -26,10 +27,10 @@ export function render(root: HTMLElement, state: AppState, view: ViewModel): voi
         pair('ACTUAL', formatMMSS(rec.actualSec)),
         pair('ENDED BY', rec.reason),
         pair('OUTCOME', OUTCOME_LABEL[rec.outcome]),
-        pair('SESSION FEE', won(rec.fee)),
-        pair('TODAY', won(r.today)),
+        pair('SESSION FEE', formatWon(rec.fee)),
+        pair('TODAY', formatWon(r.today)),
         indented(countLine(r.counts.today), 'counts'),
-        pair('THIS WEEK', won(r.week)),
+        pair('THIS WEEK', formatWon(r.week)),
         indented(countLine(r.counts.week), 'counts'),
       ]),
       line('FICTIONAL CURRENCY - NO MONETARY VALUE', 'dim'),

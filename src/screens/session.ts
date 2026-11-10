@@ -3,7 +3,8 @@ import { NO_PURPOSE } from '../core/config';
 import { formatMMSS } from '../core/time';
 import type { AppState } from '../core/session';
 import { box } from './box';
-import { el, fill, item, line, mount, pair, slot, won, type ViewModel } from './view';
+import { formatWon } from '../core/display';
+import { el, fill, item, line, mount, pair, slot, type ViewModel } from './view';
 
 export function render(root: HTMLElement, state: AppState, view: ViewModel): void {
   const session = state.session;
@@ -13,7 +14,7 @@ export function render(root: HTMLElement, state: AppState, view: ViewModel): voi
     const meter = box([
       [slot(pair('ELAPSED', formatMMSS(view.elapsedSec)), 'elapsed')],
       [slot(pair('REMAINING', formatMMSS(view.remainingSec)), 'remaining')],
-      [slot(pair('FEE', won(view.fee)), 'fee')],
+      [slot(pair('FEE', formatWon(view.fee)), 'fee')],
     ]);
     meter.classList.add('meter');
     // Updated every 250 ms; not announced each time (Req 15.1, design accessibility note).
@@ -34,5 +35,5 @@ export function render(root: HTMLElement, state: AppState, view: ViewModel): voi
 
   fill(root, 'elapsed', pair('ELAPSED', formatMMSS(view.elapsedSec)));
   fill(root, 'remaining', pair('REMAINING', formatMMSS(view.remainingSec)));
-  fill(root, 'fee', pair('FEE', won(view.fee)));
+  fill(root, 'fee', pair('FEE', formatWon(view.fee)));
 }

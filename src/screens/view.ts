@@ -1,6 +1,6 @@
 // What screens receive from the shell, plus small DOM helpers shared by screens.
 // Screens build DOM only; they never read the clock or call other browser APIs.
-import type { ReceiptModel } from '../core/history';
+import type { HistoryStatus, ReceiptModel } from '../core/history';
 
 /** User actions a screen can trigger from a click or tap. Each runs synchronously. */
 export interface Handlers {
@@ -17,6 +17,8 @@ export interface Handlers {
   linkOpened(): void;
   hangUp(): void;
   noCarrierDone(): void;
+  /** Enter or a tap on the Haunted_Screen (design Req 9.9). */
+  faceIt(): void;
   /** Y or N on the NO_CARRIER_Screen (Req 5.3, 5.4). */
   answer(yes: boolean): void;
   /** N (older) or P (newer) on the Board_Screen (Req 7.5, 7.6). */
@@ -31,6 +33,12 @@ export interface ViewModel {
   remainingSec: number;
   fee: number;
   receipt: ReceiptModel | null;
+  /** The clock at render time; screens compute drift and ages from it. */
+  now: number;
+  /** Snapshot of the stored history for the summaries; null until read. */
+  stored: HistoryStatus | null;
+  /** Ms since the Dial_Sequence started (0 before it). */
+  dialElapsedMs: number;
   on: Handlers;
 }
 
@@ -54,11 +62,6 @@ export function item(text: string, onPick: () => void, cls = 'item'): HTMLButton
     onPick();
   });
   return b;
-}
-
-/** Fictional won amount, e.g. ₩40 (Req 6.8, 9.7). */
-export function won(n: number): string {
-  return `₩${n}`;
 }
 
 /** "LABEL        VALUE" padded to a fixed label width for box rows. */

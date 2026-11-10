@@ -31,6 +31,7 @@ export function createKeys(c: KeyContext): Keys {
         else if (state.pending.blocked && state.destination && open.openInNewTab(state.destination.url)) h.linkOpened();
         return;
       case 'nocarrier': h.noCarrierDone(); return;
+      case 'haunted': h.faceIt(); return;
       default: return;
     }
   }
