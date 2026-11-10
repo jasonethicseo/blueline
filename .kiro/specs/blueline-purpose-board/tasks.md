@@ -184,7 +184,8 @@ Conventions for every task:
   - _Requirements: 10.1, 12.2_
 
 - [ ] 8. Manual checks and browser check
-  - [ ] 8.1 Add part C to `docs/manual-checks.md`
+  - Open: the C2 rows for iPhone Safari IME, the hidden-tab Time_Up, the 150 s demo timing, and the Network panel are still blank. Everything else in part C is recorded.
+  - [x] 8.1 Add part C to `docs/manual-checks.md`
     - Hangul IME on macOS Chrome, macOS Safari, and iPhone Safari: a Purpose ending in a composing syllable is submitted once with the last syllable, and Esc while composing does not go back.
     - 360 px with a 60-Hangul Purpose (Session_Screen, NO CARRIER with the check, receipt, Board) and a 120-Hangul Message (NO CARRIER): no horizontal scroll. The Board shows `Y`/`N`/`?` below 600 px and the words at 600 px and wider. The receipt count lines wrap only at ` · `.
     - The Message and the Purpose check after a hidden-tab Time_Up, after a Hang_Up, and after a reload past the end; the NO CARRIER screen waits for Y or N; the Message is not shown again after a reload on NO CARRIER or on the receipt, and an unanswered Session stays NO ANSWER.
@@ -192,8 +193,9 @@ Conventions for every task:
     - The full 1 MIN demo under 150 s. DevTools Network shows no request on the new screens.
     - Before writing this part, ask the user which devices are available for the IME check.
     - _Requirements: 3.6, 3.7, 4.2, 4.5, 7.10, 8.4, 11.4, 11.7, 12.1_
-  - [ ] 8.2 Run a headless browser check of the new flow
+  - [x] 8.2 Run a headless browser check of the new flow
     - With the same approach as the core flow check: dial → Purpose → Message → 1 MIN → connect → NO CARRIER with the Message and the Purpose check → Y → receipt → Board, under a fake clock. Record the results in `docs/manual-checks.md`.
+    - Done without a fake clock: the scripts hang up right after connecting, and the expired-session case uses a stored start two minutes in the past. Results are in part C1 (104 / 104).
     - _Requirements: 4.1, 5.1, 5.3, 6.2, 7.2, 12.1_
 
 - [ ] 9. README
