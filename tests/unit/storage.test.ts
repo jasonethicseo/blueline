@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { HISTORY_KEY, LEGACY_HISTORY_KEY, loadHistory, saveHistory } from '../../src/platform/storage';
+import {
+  ACTIVE_KEY, HISTORY_KEY, LEGACY_ACTIVE_KEY, LEGACY_HISTORY_KEY,
+  clearActive, loadActive, loadHistory, saveActive, saveHistory,
+} from '../../src/platform/storage';
 import type { SessionRecord } from '../../src/core/record';
 
 /** A Map-backed stand-in for window.localStorage. */
@@ -84,5 +87,37 @@ describe('history storage keys', () => {
     });
     expect(loadHistory()).toEqual({ kind: 'unavailable' });
     expect(saveHistory([record])).toBe(false);
+  });
+});
+
+describe('active session storage keys', () => {
+  const v1 = JSON.stringify({ v: 1, start: 1, plannedSec: 60, label: 'YOUTUBE' });
+  const active = { start: 2, plannedSec: 300, label: 'CUSTOM' as const, purpose: '강의 하나만', memo: null };
+
+  it('uses the v2 and v1 key names from the design', () => {
+    expect(ACTIVE_KEY).toBe('blueline.active.v2');
+    expect(LEGACY_ACTIVE_KEY).toBe('blueline.active.v1');
+  });
+
+  it('reads the v2 key first and falls back to the v1 key', () => {
+    fakeStorage({ [ACTIVE_KEY]: 'v2 text', [LEGACY_ACTIVE_KEY]: v1 });
+    expect(loadActive()).toBe('v2 text');
+    vi.unstubAllGlobals();
+    fakeStorage({ [LEGACY_ACTIVE_KEY]: v1 });
+    expect(loadActive()).toBe(v1);
+  });
+
+  it('writes only the v2 key, with the Purpose and the Message', () => {
+    const s = fakeStorage();
+    expect(saveActive(active)).toBe(true);
+    expect(s.writes).toEqual([ACTIVE_KEY]);
+    expect(JSON.parse(s.data.get(ACTIVE_KEY) as string)).toEqual({ v: 2, ...active });
+  });
+
+  it('clearActive removes both keys, so an ended legacy Session is never recovered again', () => {
+    const s = fakeStorage({ [ACTIVE_KEY]: 'x', [LEGACY_ACTIVE_KEY]: v1 });
+    expect(clearActive()).toBe(true);
+    expect(s.removes).toEqual([ACTIVE_KEY, LEGACY_ACTIVE_KEY]);
+    expect(loadActive()).toBeNull();
   });
 });

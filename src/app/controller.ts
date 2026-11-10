@@ -3,17 +3,16 @@
 import { DIAL_TEXT, TIMING } from '../core/config';
 import { fee } from '../core/fee';
 import { buildReceipt, type HistoryStatus, type ReceiptModel } from '../core/history';
-import { resolveInput, viewOf } from '../core/commands';
 import { recover } from '../core/recover';
 import { initialState, step, type AppState, type Effect, type Event } from '../core/session';
 import { scheduledEnd } from '../core/session-end';
 import { elapsedSeconds, remainingSeconds } from '../core/time';
 import * as modem from '../audio/modem';
-import * as open from '../platform/open';
 import * as page from '../platform/page';
 import * as storage from '../platform/storage';
 import type { Handlers, ViewModel } from '../screens/view';
 import { runEffect, type EffectHost } from './effects';
+import { createKeys } from './keys';
 
 export interface Controller {
   state(): AppState;
@@ -151,6 +150,10 @@ export function createController(render: (c: Controller) => void): Controller {
     dial: () => { modem.unlock(); dispatch({ type: state.phase === 'DIALING' ? 'DIAL_SKIP' : 'DIAL' }); },
     menu: (n) => { modem.unlock(); dispatch({ type: 'MENU_KEY', n }); },
     urlSubmit: (text) => dispatch({ type: 'URL_SUBMIT', text }),
+    purposeSubmit: (text) => dispatch({ type: 'PURPOSE_SUBMIT', text }),
+    memoSubmit: (text) => dispatch({ type: 'MEMO_SUBMIT', text }),
+    // Typing only clears a shown message (Req 1.7); skip the dispatch when there is none.
+    typing: () => { if (state.message !== null) dispatch({ type: 'TYPING' }); },
     back: () => dispatch({ type: 'BACK' }),
     confirm: () => { modem.unlock(); dispatch({ type: 'CONFIRM' }); },
     linkOpened: () => dispatch({ type: 'LINK_OPENED', now: Date.now() }),
@@ -158,34 +161,7 @@ export function createController(render: (c: Controller) => void): Controller {
     noCarrierDone: () => dispatch({ type: 'NOCARRIER_DONE' }),
   };
 
-  function enter(): void {
-    switch (viewOf(state)) {
-      case 'dial': handlers.dial(); return;
-      case 'confirm':
-        if (!state.pending) handlers.confirm();
-        else if (state.pending.blocked && state.destination && open.openInNewTab(state.destination.url)) handlers.linkOpened();
-        return;
-      case 'nocarrier': handlers.noCarrierDone(); return;
-    }
-  }
-
-  function submit(text: string): void {
-    const action = resolveInput(viewOf(state), text);
-    if (action.kind === 'none') return enter();
-    if (action.kind === 'message') return dispatch({ type: 'MESSAGE', text: action.text });
-    if (action.kind === 'help') return dispatch({ type: 'MESSAGE', text: action.lines.join('\n') });
-    const c = action.command;
-    if (c.kind === 'number') return handlers.menu(c.n);
-    if (c.kind === 'bye') return handlers.hangUp();
-    if (c.kind === 'back') return handlers.back();
-    if (c.kind === 'go') return dispatch({ type: 'GO', alias: c.alias });
-  }
-
-  function escape(): void {
-    const v = viewOf(state);
-    if (v === 'session') handlers.hangUp();
-    else if (v === 'confirm' && !state.pending) handlers.back();
-  }
+  const keys = createKeys({ state: () => state, dispatch, handlers });
 
   // Coming back to the tab: stop flashing, re-check time-up, re-render (Req 6.9, 7.12, 7.13).
   page.onResume(() => {
@@ -195,7 +171,8 @@ export function createController(render: (c: Controller) => void): Controller {
   });
 
   const api: Controller = {
-    state: () => state, dispatch, handlers, submit, escape, view, finalFrame, refresh: () => paint(),
+    state: () => state, dispatch, handlers, submit: keys.submit, escape: keys.escape, view, finalFrame,
+    refresh: () => paint(),
   };
 
   // Boot from storage (Req 11, 14.3).

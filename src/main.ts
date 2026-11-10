@@ -5,6 +5,7 @@ import { createController, type Controller } from './app/controller';
 import { attachInput, usedPointer } from './app/input';
 import * as dial from './screens/dial';
 import * as menu from './screens/menu';
+import * as purpose from './screens/purpose';
 import * as confirm from './screens/confirm';
 import * as session from './screens/session';
 import * as nocarrier from './screens/nocarrier';
@@ -25,6 +26,8 @@ function route(c: Controller): void {
     case 'destination':
     case 'urlEntry':
     case 'duration': return menu.render(screen, state, view);
+    case 'purpose':
+    case 'memo': return purpose.render(screen, state, view);
     case 'confirm': return confirm.render(screen, state, view);
     case 'session': return session.render(screen, state, view);
     case 'nocarrier': return nocarrier.render(screen, state, view);
@@ -37,11 +40,16 @@ function render(c: Controller): void {
   const text = c.state().message ?? '';
   if (message.textContent !== text) message.textContent = text;
 
+  // The Purpose_Field and Message_Field replace the Command_Prompt (Req 11.1).
+  const v = viewOf(c.state());
+  const textScreen = v === 'purpose' || v === 'memo';
+  if (form.hidden !== textScreen) form.hidden = textScreen;
+
   // Keep keyboard focus in the Command_Prompt when a re-render removed the focused element
   // (Req 4.7, 12.12). Skip after taps so phones do not pop up the keyboard, and skip screens
-  // that focus their own field (URL entry, popup link).
+  // that focus their own field (URL entry, Purpose, Message, popup link).
   const state = c.state();
-  const ownFocus = state.urlEntry || state.pending?.blocked;
+  const ownFocus = state.urlEntry || state.pending?.blocked || textScreen;
   const lost = !document.activeElement || document.activeElement === document.body;
   if (lost && !ownFocus && !usedPointer()) prompt.focus({ preventScroll: true });
 }

@@ -1,9 +1,11 @@
-// Feature: blueline-core-flow, Property 7: Only listed transitions happen
+// Feature: blueline-core-flow, Property 7: Only listed transitions happen (replaced by purpose-board Property 16)
 // Feature: blueline-core-flow, Property 8: Ended is final
 // Feature: blueline-core-flow, Property 9: A session ends exactly once
 // Feature: blueline-core-flow, Property 10: End record values
 // Feature: blueline-core-flow, Property 16: Connect step starts once
 // Feature: blueline-core-flow, Property 17: Permission request and opening use separate user actions
+// Feature: blueline-purpose-board, Property 15: Permission and opening stay in their places
+// Feature: blueline-purpose-board, Property 16: Only listed transitions happen
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import type { Event, Phase, Session } from '../../src/core/session';
@@ -11,25 +13,35 @@ import { endRecord, scheduledEnd } from '../../src/core/session-end';
 import { fee } from '../../src/core/fee';
 import { elapsedSeconds } from '../../src/core/time';
 import { LABELS } from '../../src/core/record';
-import { BASE, anyEvent, effectsOf, finalState, replay, script, tail, time, toConnected, toEnded } from './session-arb';
-import { planned, timestamp } from './arbitraries';
+import {
+  BASE, MEMO, PURPOSE, anyEvent, effectsOf, finalState, replay, script, tail, time, toConnected, toEnded,
+} from './session-arb';
+import { planned, purpose, timestamp } from './arbitraries';
 
+// Requirement 10 criterion 2.
 const ALLOWED = new Set<string>([
-  'IDLE>DIALING', 'DIALING>SELECT_DEST', 'SELECT_DEST>SELECT_DURATION', 'SELECT_DURATION>SELECT_DEST',
-  'SELECT_DURATION>CONNECTED', 'CONNECTED>ENDED', 'ENDED>IDLE',
+  'IDLE>DIALING', 'DIALING>SELECT_DEST', 'SELECT_DEST>SET_PURPOSE', 'SET_PURPOSE>SELECT_DEST',
+  'SET_PURPOSE>SELECT_DURATION', 'SELECT_DURATION>SET_PURPOSE', 'SELECT_DURATION>CONNECTED',
+  'CONNECTED>ENDED', 'ENDED>IDLE',
 ]);
 const edge = (a: Phase, b: Phase) => `${a}>${b}`;
 
-describe('Property 7: Only listed transitions happen', () => {
+describe('Property 16: Only listed transitions happen', () => {
   it('every step keeps the phase or follows a listed transition', () => {
+    const seen = new Set<string>();
     fc.assert(
       fc.property(script, (events) => {
         for (const s of replay(events)) {
-          if (s.before.phase !== s.after.phase) expect(ALLOWED).toContain(edge(s.before.phase, s.after.phase));
+          if (s.before.phase === s.after.phase) continue;
+          const e = edge(s.before.phase, s.after.phase);
+          expect(ALLOWED).toContain(e);
+          seen.add(e);
         }
       }),
       { numRuns: 500 },
     );
+    // The generators must reach every listed transition, or the property says little.
+    expect([...ALLOWED].filter((e) => !seen.has(e))).toEqual([]);
   });
 });
 
@@ -37,7 +49,8 @@ describe('Property 8: Ended is final', () => {
   // Dial again and reconnect, with random events mixed in between the steps.
   const reconnect: Event[] = [
     { type: 'NOCARRIER_DONE' }, { type: 'DIAL_AGAIN' }, { type: 'DIAL' }, { type: 'HANDSHAKE_DONE' },
-    { type: 'SHOW_MENU' }, { type: 'MENU_KEY', n: 1 }, { type: 'MENU_KEY', n: 1 }, { type: 'CONFIRM' },
+    { type: 'SHOW_MENU' }, { type: 'MENU_KEY', n: 1 }, { type: 'PURPOSE_SUBMIT', text: PURPOSE },
+    { type: 'MEMO_SUBMIT', text: '' }, { type: 'MENU_KEY', n: 1 }, { type: 'CONFIRM' },
   ];
   const mixed = fc
     .tuple(fc.array(fc.array(anyEvent, { maxLength: 2 }), { minLength: reconnect.length, maxLength: reconnect.length }), time)
@@ -101,8 +114,8 @@ describe('Property 9: A session ends exactly once', () => {
 });
 
 describe('Property 10: End record values', () => {
-  const session = fc.tuple(timestamp, planned, fc.constantFrom(...LABELS))
-    .map(([start, plannedSec, label]): Session => ({ id: 1, start, plannedSec, label }));
+  const session = fc.tuple(timestamp, planned, fc.constantFrom(...LABELS), fc.option(purpose, { nil: null }))
+    .map(([start, plannedSec, label, p]): Session => ({ id: 1, start, plannedSec, label, purpose: p, memo: null }));
 
   it('TIME UP uses the scheduled end; HANG UP uses floor(elapsed) and keeps end ≥ start', () => {
     fc.assert(
@@ -114,6 +127,8 @@ describe('Property 10: End record values', () => {
         expect(h.actualSec).toBe(elapsedSeconds(s.start, now, s.plannedSec));
         expect(h.fee).toBe(fee(h.actualSec));
         expect(h.end).toBeGreaterThanOrEqual(h.start);
+        // The record carries the Session's Purpose and starts as NO ANSWER (Req 5.5).
+        for (const r of [t, h]) expect(r).toMatchObject({ purpose: s.purpose, outcome: 'NO ANSWER' });
       }),
       { numRuns: 500 },
     );
@@ -142,7 +157,10 @@ describe('Property 16: Connect step starts once', () => {
   it('at most one open and one session, with the confirmed duration and first start', () => {
     fc.assert(
       fc.property(fc.array(connectEvent, { maxLength: 40 }), (events) => {
-        const start = finalState([{ type: 'DIAL' }, { type: 'HANDSHAKE_DONE' }, { type: 'SHOW_MENU' }, { type: 'MENU_KEY', n: 2 }]);
+        const start = finalState([
+          { type: 'DIAL' }, { type: 'HANDSHAKE_DONE' }, { type: 'SHOW_MENU' }, { type: 'MENU_KEY', n: 2 },
+          { type: 'PURPOSE_SUBMIT', text: PURPOSE }, { type: 'MEMO_SUBMIT', text: MEMO },
+        ]);
         const steps = replay(events, start);
         const opens = steps.filter((s) => s.effects.some((e) => e.type === 'openDestination'));
         const saves = steps.filter((s) => s.effects.some((e) => e.type === 'saveActive'));
@@ -161,7 +179,7 @@ describe('Property 16: Connect step starts once', () => {
   });
 });
 
-describe('Property 17: Permission request and opening use separate user actions', () => {
+describe('Property 17 and Property 15: permission and opening stay in their places', () => {
   it('never in one step; open only on CONFIRM; permission only on a duration pick, once per dial-in', () => {
     fc.assert(
       fc.property(script, (events) => {
@@ -179,6 +197,8 @@ describe('Property 17: Permission request and opening use separate user actions'
             asked += 1;
             expect(asked).toBeLessThanOrEqual(1);
           }
+          // Nothing on the Purpose_Screen or the Message_Screen asks or opens (Req 10.4, 10.5).
+          if (s.before.phase === 'SET_PURPOSE') expect(opens || asks).toBe(false);
           if (s.before.phase === 'ENDED' && s.after.phase === 'IDLE') asked = 0;
         }
       }),
@@ -186,13 +206,18 @@ describe('Property 17: Permission request and opening use separate user actions'
     );
   });
 
-  it('still asks only once when the user goes back and picks again', () => {
+  it('still asks only once when the user goes back to the Message_Screen and picks again', () => {
     const events: Event[] = [
       { type: 'DIAL' }, { type: 'HANDSHAKE_DONE' }, { type: 'SHOW_MENU' }, { type: 'MENU_KEY', n: 1 },
-      { type: 'MENU_KEY', n: 2 }, { type: 'BACK' }, { type: 'MENU_KEY', n: 3 }, { type: 'BACK' }, { type: 'BACK' },
-      { type: 'MENU_KEY', n: 2 }, { type: 'MENU_KEY', n: 5 },
+      { type: 'PURPOSE_SUBMIT', text: PURPOSE }, { type: 'MEMO_SUBMIT', text: '' },
+      { type: 'MENU_KEY', n: 2 }, { type: 'BACK' }, { type: 'BACK' }, { type: 'BACK' },
+      { type: 'MEMO_SUBMIT', text: MEMO }, { type: 'MENU_KEY', n: 0 }, { type: 'BACK' }, { type: 'BACK' },
+      { type: 'MENU_KEY', n: 2 }, { type: 'PURPOSE_SUBMIT', text: '다른 목적' }, { type: 'MEMO_SUBMIT', text: '' },
+      { type: 'MENU_KEY', n: 5 },
     ];
-    const asks = effectsOf(replay(events)).filter((e) => e.type === 'requestNotifyPermission');
+    const steps = replay(events);
+    const asks = effectsOf(steps).filter((e) => e.type === 'requestNotifyPermission');
     expect(asks).toHaveLength(1);
+    expect(steps[steps.length - 1]?.after.confirm).toEqual({ plannedSec: 1800 });
   });
 });

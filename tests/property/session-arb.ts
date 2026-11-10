@@ -16,6 +16,11 @@ export const anyEvent: fc.Arbitrary<Event> = fc.oneof(
   fc.constantFrom('youtube.com', 'back', 'BACK', 'javascript:x', '', 'zz.example/feed')
     .map((text): Event => ({ type: 'URL_SUBMIT', text })),
   simple('BACK'), simple('CONFIRM'),
+  fc.constantFrom('강의 하나만', 'back', '', '   ', 'x'.repeat(61), ' 0 ')
+    .map((text): Event => ({ type: 'PURPOSE_SUBMIT', text })),
+  fc.constantFrom('', '다 봤으면 끄자', 'y'.repeat(121), ' bye ')
+    .map((text): Event => ({ type: 'MEMO_SUBMIT', text })),
+  simple('TYPING'),
   time.map((now): Event => ({ type: 'OPENED', now })),
   simple('POPUP_BLOCKED'),
   time.map((now): Event => ({ type: 'LINK_OPENED', now })),
@@ -27,7 +32,11 @@ export const anyEvent: fc.Arbitrary<Event> = fc.oneof(
 
 /** Scripted paths to each phase, so random tails start from every reachable state. */
 const toDest: Event[] = [{ type: 'DIAL' }, { type: 'HANDSHAKE_DONE' }, { type: 'SHOW_MENU' }];
-const toDuration: Event[] = [...toDest, { type: 'MENU_KEY', n: 1 }];
+export const PURPOSE = '강의 영상 하나만';
+export const MEMO = '다 봤으면 바로 끄자';
+const toPurpose: Event[] = [...toDest, { type: 'MENU_KEY', n: 1 }];
+const toMemo: Event[] = [...toPurpose, { type: 'PURPOSE_SUBMIT', text: PURPOSE }];
+const toDuration: Event[] = [...toMemo, { type: 'MEMO_SUBMIT', text: MEMO }];
 const toConfirm: Event[] = [...toDuration, { type: 'MENU_KEY', n: 1 }];
 const toPending: Event[] = [...toConfirm, { type: 'CONFIRM' }];
 export const toConnected: Event[] = [...toPending, { type: 'OPENED', now: BASE }];
@@ -35,8 +44,9 @@ export const toEnded: Event[] = [...toConnected, { type: 'HANG_UP', now: BASE + 
 const toReceipt: Event[] = [...toEnded, { type: 'NOCARRIER_DONE' }];
 
 export const prefix = fc.constantFrom<Event[]>(
-  [], [{ type: 'DIAL' }], toDest, [...toDest, { type: 'MENU_KEY', n: 3 }], toDuration, toConfirm,
-  toPending, [...toPending, { type: 'POPUP_BLOCKED' }], toConnected, toEnded, toReceipt,
+  [], [{ type: 'DIAL' }], toDest, [...toDest, { type: 'MENU_KEY', n: 3 }], toPurpose, toMemo,
+  [...toDest, { type: 'MENU_KEY', n: 2 }, { type: 'PURPOSE_SUBMIT', text: PURPOSE }, { type: 'MEMO_SUBMIT', text: '' }],
+  toDuration, toConfirm, toPending, [...toPending, { type: 'POPUP_BLOCKED' }], toConnected, toEnded, toReceipt,
 );
 
 export const tail = (max = 40) => fc.array(anyEvent, { maxLength: max });

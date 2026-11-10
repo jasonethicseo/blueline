@@ -1,73 +1,35 @@
-// Session_State_Machine (Requirement 14): a pure reducer that returns effects as data.
-import { PRESETS, ALIASES, durationByKey, type Alias, type PresetLabel } from './config';
+// Session_State_Machine (core Requirement 14, purpose-board Requirement 10): a pure reducer
+// that returns effects as data. Types and shared helpers live in session-state.ts.
+import { PRESETS, ALIASES, durationByKey, type PresetLabel } from './config';
 import { normalizeUrl } from './url';
-import type { ActiveSession, Label, NewRecord } from './record';
 import { endSession, reasonAt, scheduledEnd } from './session-end';
+import { intentStep } from './session-intent';
+import {
+  initialState, same, say, toDestMenu,
+  type AppState, type Destination, type Event, type Session, type StepResult,
+} from './session-state';
 
-export type Phase = 'IDLE' | 'DIALING' | 'SELECT_DEST' | 'SELECT_DURATION' | 'CONNECTED' | 'ENDED';
-
-export interface Destination { label: Label; url: string }
-export interface Session { id: number; start: number; plannedSec: number; label: Label }
-
-export interface AppState {
-  phase: Phase;
-  seq: number;
-  message: string | null;
-  dial: { connectShown: boolean };
-  urlEntry: boolean;
-  /** Held in memory only; never stored (Req 10.1). */
-  destination: Destination | null;
-  confirm: { plannedSec: number } | null;
-  pending: { plannedSec: number; blocked: boolean } | null;
-  notifyAsked: boolean;
-  session: Session | null;
-  ended: { record: NewRecord; view: 'nocarrier' | 'receipt' } | null;
-}
-
-export type Event =
-  | { type: 'DIAL' } | { type: 'DIAL_SKIP' } | { type: 'HANDSHAKE_DONE' } | { type: 'SHOW_MENU' }
-  | { type: 'MENU_KEY'; n: number } | { type: 'GO'; alias: Alias }
-  | { type: 'URL_SUBMIT'; text: string } | { type: 'BACK' } | { type: 'CONFIRM' }
-  | { type: 'OPENED'; now: number } | { type: 'POPUP_BLOCKED' } | { type: 'LINK_OPENED'; now: number }
-  | { type: 'TICK'; now: number } | { type: 'HANG_UP'; now: number }
-  | { type: 'NOCARRIER_DONE' } | { type: 'DIAL_AGAIN' }
-  | { type: 'MESSAGE'; text: string | null };
-
-export type Effect =
-  | { type: 'playHandshake' } | { type: 'stopSound' } | { type: 'playNoCarrier' }
-  | { type: 'openDestination'; url: string }
-  | { type: 'requestNotifyPermission' }
-  | { type: 'saveActive'; active: ActiveSession }
-  | { type: 'clearActive' }
-  | { type: 'endSession'; record: NewRecord }
-  | { type: 'notifyTimeUp' };
-
-export interface StepResult { state: AppState; effects: Effect[] }
+export * from './session-state';
 
 export const MSG_INVALID_SELECTION = 'INVALID SELECTION';
 export const MSG_INVALID_URL = 'INVALID URL';
 export const MSG_INVALID_SCHEME = 'INVALID URL - HTTP OR HTTPS ONLY';
 
-export function initialState(seq = 0): AppState {
-  return {
-    phase: 'IDLE', seq, message: null, dial: { connectShown: false }, urlEntry: false,
-    destination: null, confirm: null, pending: null, notifyAsked: false, session: null, ended: null,
-  };
-}
-
-// User inputs clear the previous message before they are handled (Req 2.6, 4.5).
+// User inputs clear the previous message before they are handled (core Req 2.6, 4.5; Req 1.7).
 const USER_INPUTS = new Set<Event['type']>([
   'DIAL', 'DIAL_SKIP', 'MENU_KEY', 'GO', 'URL_SUBMIT', 'BACK', 'CONFIRM',
+  'PURPOSE_SUBMIT', 'MEMO_SUBMIT', 'TYPING',
   'LINK_OPENED', 'HANG_UP', 'NOCARRIER_DONE', 'DIAL_AGAIN',
 ]);
 
-const same = (state: AppState): StepResult => ({ state, effects: [] });
-const say = (state: AppState, message: string): StepResult => ({ state: { ...state, message }, effects: [] });
 const preset = (label: PresetLabel): Destination => ({ label, url: PRESETS[label] });
-const toDuration = (s: AppState, destination: Destination): StepResult =>
-  same({ ...s, phase: 'SELECT_DURATION', urlEntry: false, destination, confirm: null, pending: null });
-const toDestMenu = (s: AppState): StepResult =>
-  same({ ...s, phase: 'SELECT_DEST', urlEntry: false, destination: null, confirm: null, pending: null });
+
+/** A Destination was selected: ask for the Purpose next, with nothing written yet (Req 1.1). */
+const toPurpose = (s: AppState, destination: Destination): StepResult =>
+  same({
+    ...s, phase: 'SET_PURPOSE', textStep: 'purpose', urlEntry: false, destination, intent: null,
+    confirm: null, pending: null,
+  });
 
 export function step(state: AppState, event: Event): StepResult {
   if (event.type === 'MESSAGE') return same({ ...state, message: event.text });
@@ -78,6 +40,7 @@ export function step(state: AppState, event: Event): StepResult {
       : same(s);
     case 'DIALING': return dialing(s, event);
     case 'SELECT_DEST': return s.urlEntry ? urlEntry(s, event) : destinationMenu(s, event);
+    case 'SET_PURPOSE': return intentStep(s, event);
     case 'SELECT_DURATION': return s.pending ? connecting(s, event) : s.confirm ? confirmScreen(s, event) : durationMenu(s, event);
     case 'CONNECTED': return connected(s, event);
     case 'ENDED': return ended(s, event);
@@ -95,10 +58,10 @@ function dialing(s: AppState, e: Event): StepResult {
 }
 
 function destinationMenu(s: AppState, e: Event): StepResult {
-  if (e.type === 'GO') return toDuration(s, preset(ALIASES[e.alias]));
+  if (e.type === 'GO') return toPurpose(s, preset(ALIASES[e.alias]));
   if (e.type !== 'MENU_KEY') return same(s);
-  if (e.n === 1) return toDuration(s, preset('YOUTUBE'));
-  if (e.n === 2) return toDuration(s, preset('INSTAGRAM'));
+  if (e.n === 1) return toPurpose(s, preset('YOUTUBE'));
+  if (e.n === 2) return toPurpose(s, preset('INSTAGRAM'));
   if (e.n === 3) return same({ ...s, urlEntry: true });
   return say(s, MSG_INVALID_SELECTION);
 }
@@ -108,12 +71,15 @@ function urlEntry(s: AppState, e: Event): StepResult {
   if (e.type !== 'URL_SUBMIT') return same(s);
   if (e.text.trim().toLowerCase() === 'back') return toDestMenu(s);
   const r = normalizeUrl(e.text);
-  if (r.ok) return toDuration(s, { label: 'CUSTOM', url: r.url });
+  if (r.ok) return toPurpose(s, { label: 'CUSTOM', url: r.url });
   return say(s, r.error === 'SCHEME' ? MSG_INVALID_SCHEME : MSG_INVALID_URL);
 }
 
 function durationMenu(s: AppState, e: Event): StepResult {
-  if (e.type === 'BACK' || (e.type === 'MENU_KEY' && e.n === 0)) return toDestMenu(s);
+  // Back goes to the Message_Screen with the Message written earlier (Req 3.5).
+  if (e.type === 'BACK' || (e.type === 'MENU_KEY' && e.n === 0)) {
+    return same({ ...s, phase: 'SET_PURPOSE', textStep: 'memo', confirm: null, pending: null });
+  }
   if (e.type !== 'MENU_KEY') return same(s);
   const d = durationByKey(e.n);
   if (!d) return say(s, MSG_INVALID_SELECTION);
@@ -134,17 +100,25 @@ function confirmScreen(s: AppState, e: Event): StepResult {
 
 function connecting(s: AppState, e: Event): StepResult {
   const pending = s.pending;
-  if (!pending || !s.destination) return same(s);
+  const purpose = s.intent?.purpose;
+  if (!pending || !s.destination || !purpose) return same(s);
   if (e.type === 'POPUP_BLOCKED' && !pending.blocked) return same({ ...s, pending: { ...pending, blocked: true } });
   const opened = e.type === 'OPENED' || (e.type === 'LINK_OPENED' && pending.blocked);
   if (!opened) return same(s);
-  const session: Session = { id: s.seq + 1, start: e.now, plannedSec: pending.plannedSec, label: s.destination.label };
+  const memo = s.intent?.memo ?? null;
+  const session: Session = {
+    id: s.seq + 1, start: e.now, plannedSec: pending.plannedSec, label: s.destination.label, purpose, memo,
+  };
   return {
     state: {
       ...s, phase: 'CONNECTED', seq: session.id, session,
-      destination: null, confirm: null, pending: null, urlEntry: false,
+      destination: null, intent: null, confirm: null, pending: null, urlEntry: false,
     },
-    effects: [{ type: 'saveActive', active: { start: session.start, plannedSec: session.plannedSec, label: session.label } }],
+    // The Purpose and the Message are written with the core fields before the Session_Screen (Req 9.1).
+    effects: [{
+      type: 'saveActive',
+      active: { start: session.start, plannedSec: session.plannedSec, label: session.label, purpose, memo },
+    }],
   };
 }
 

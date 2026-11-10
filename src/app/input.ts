@@ -34,6 +34,9 @@ export function attachInput(c: Controller, prompt: HTMLInputElement, form: HTMLF
   document.addEventListener('keydown', (e) => {
     pointer = false;
     if (e.isComposing || e.altKey || e.ctrlKey || e.metaKey) return;
+    // Safari can report the key press that ends a Hangul composition with isComposing false but
+    // keyCode 229. Leave those to the input method editor, including Escape (Req 3.6).
+    if (e.keyCode === 229) return;
     const target = e.target;
 
     // Escape works wherever focus is (Req 8.2, 4.8).

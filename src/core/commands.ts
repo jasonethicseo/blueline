@@ -15,9 +15,10 @@ export type ParseResult =
   | { type: 'unknownDestination' }
   | { type: 'unknown' };
 
-/** The screens that have a Command_Prompt. */
+/** The screens. All but `purpose` and `memo` have a Command_Prompt; those two have a text field instead. */
 export type ViewName =
-  | 'dial' | 'destination' | 'urlEntry' | 'duration' | 'confirm' | 'session' | 'nocarrier' | 'receipt';
+  | 'dial' | 'destination' | 'urlEntry' | 'purpose' | 'memo' | 'duration' | 'confirm' | 'session'
+  | 'nocarrier' | 'receipt';
 
 /** Which screen the state shows; decides accepted commands and key handling. */
 export function viewOf(state: AppState): ViewName {
@@ -27,6 +28,8 @@ export function viewOf(state: AppState): ViewName {
       return 'dial';
     case 'SELECT_DEST':
       return state.urlEntry ? 'urlEntry' : 'destination';
+    case 'SET_PURPOSE':
+      return state.textStep;
     case 'SELECT_DURATION':
       return state.confirm || state.pending ? 'confirm' : 'duration';
     case 'CONNECTED':
@@ -64,8 +67,13 @@ export function acceptedCommands(view: ViewName): string[] {
       return ['1 - YOUTUBE', '2 - INSTAGRAM', '3 - CUSTOM URL', 'GO YT - YOUTUBE', 'GO IG - INSTAGRAM', HELP_LINE];
     case 'urlEntry':
       return ['ENTER - SUBMIT URL', 'BACK - DESTINATION MENU', HELP_LINE];
+    // No Command_Prompt on these screens, so `help` cannot be typed there; listed for completeness.
+    case 'purpose':
+      return ['ENTER - SUBMIT PURPOSE', 'ESC - BACK (MAIN MENU)'];
+    case 'memo':
+      return ['ENTER - SUBMIT MESSAGE (EMPTY TO SKIP)', 'ESC - BACK (PURPOSE)'];
     case 'duration':
-      return [...DURATIONS.map((d) => `${d.key} - ${d.label}`), '0 - BACK', 'BACK - DESTINATION MENU', HELP_LINE];
+      return [...DURATIONS.map((d) => `${d.key} - ${d.label}`), '0 - BACK (MESSAGE)', 'BACK - MESSAGE SCREEN', HELP_LINE];
     case 'confirm':
       return ['ENTER - CONNECT', '0 - BACK', 'ESC - BACK', 'BACK - DURATION MENU', HELP_LINE];
     case 'session':
@@ -94,6 +102,8 @@ export function isAccepted(view: ViewName, command: Command): boolean {
     case 'receipt':
       return command.kind === 'number';
     case 'dial':
+    case 'purpose':
+    case 'memo':
     case 'nocarrier':
       return false;
   }

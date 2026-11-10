@@ -198,8 +198,14 @@ a {
   margin-top: auto;
 }
 
+/* The author display above would otherwise beat the hidden attribute (Req 11.1). */
+#prompt-form[hidden] {
+  display: none;
+}
+
 #prompt,
-.url-input {
+.url-input,
+.text-field {
   flex: 1;
   min-width: 0;
   min-height: 44px;
@@ -215,7 +221,8 @@ a {
   outline-offset: 0;
 }
 
-.url-input {
+.url-input,
+.text-field {
   width: 100%;
 }
 

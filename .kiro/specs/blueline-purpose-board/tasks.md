@@ -88,36 +88,37 @@ Conventions for every task:
     - `countLine` text and its no-break spaces; receipt counts with `unavailable` history use only the current Session.
     - _Requirements: 6.2, 6.7_
 
-- [ ] 4. Purpose and Message screens (SET_PURPOSE)
-  - [ ] 4.1 Extend the state machine in `src/core/session.ts` and create `src/core/session-intent.ts`
+- [x] 4. Purpose and Message screens (SET_PURPOSE)
+  - [x] 4.1 Extend the state machine in `src/core/session.ts` and create `src/core/session-intent.ts`
     - Phase `SET_PURPOSE`, `AppState.intent` and `textStep`, events `PURPOSE_SUBMIT`, `MEMO_SUBMIT`, `TYPING`.
     - Selecting a destination goes to the Purpose_Screen. `toDestMenu` clears `intent`. Back from the Duration_Menu goes to the Message_Screen with the earlier Message.
     - The connecting step copies `purpose` and `memo` into `Session` and `saveActive`, then clears `intent`.
     - `endRecord` takes `purpose` from the Session.
+    - Changed during the task: the types and shared state helpers moved to the new `src/core/session-state.ts` (re-exported by `session.ts`), so `session-intent.ts` needs no import from `session.ts` and there is no import cycle.
     - _Requirements: 1.1, 1.3, 1.4, 1.5, 1.7, 1.8, 2.3, 2.4, 2.5, 3.3, 3.4, 3.5, 9.1, 10.1, 10.2_
-  - [ ] 4.2 Active_Session_State v2 and recovery
+  - [x] 4.2 Active_Session_State v2 and recovery
     - `serializeActive` writes `{ v: 2, …, purpose, memo }`. `parseActive` reads v1 with the v1 reader in `record.ts` (`purpose: null`, `memo: null`) and checks v2 Purpose and memo. `recover` carries both into the Session.
     - `storage.ts`: write `blueline.active.v2`, read v2 then v1, and have `clearActive` remove both keys.
     - _Requirements: 9.1, 9.2, 9.4, 9.5_
-  - [ ] 4.3 Commands, keys, and the controller split
+  - [x] 4.3 Commands, keys, and the controller split
     - `ViewName` gains `purpose` and `memo`. Duration_Menu `help` says `0 - BACK (MESSAGE)` and `BACK - MESSAGE SCREEN`.
     - Move submit, Enter, and Escape mapping from `controller.ts` to the new `src/app/keys.ts`. Escape on `purpose` and `memo` → back.
     - `input.ts`: return early when `e.isComposing || e.keyCode === 229`.
     - Handlers gain `purposeSubmit`, `memoSubmit`, `typing`.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.6, 11.2_
-  - [ ] 4.4 Create `src/screens/purpose.ts` and update `main.ts`, `screens/session.ts`, `screens/view.ts`, and `crt.css`
-    - Purpose_Screen and Message_Screen as in the design. Enter in the field's own `keydown` handler, ignored while composing. No `maxLength`. A BACK button. The `input` event dispatches `TYPING`.
+  - [x] 4.4 Create `src/screens/purpose.ts` and update `main.ts`, `screens/session.ts`, `screens/view.ts`, and `crt.css`
+    - Purpose_Screen and Message_Screen as in the design. Changed during the task: each field submits through its `<form>`, and a submit caused by a composing Enter (`isComposing` or `keyCode 229`) is ignored; Escape is handled only by `input.ts`. No `maxLength`. A BACK button. The `input` event dispatches `TYPING`.
     - `main.ts` routes the views, hides the Command_Prompt form on them, and lets them own focus.
     - The Session_Screen shows `PURPOSE: <purpose or (NO PURPOSE)>`. The tab title and notification text do not change.
     - _Requirements: 1.1, 1.9, 2.1, 3.1, 3.2, 3.6, 3.7, 3.8, 11.1, 11.3, 11.4, 11.5, 11.6_
-  - [ ] 4.5 Update the session generators and core state-machine properties
+  - [x] 4.5 Update the session generators and core state-machine properties
     - `tests/property/session-arb.ts` gains paths through `SET_PURPOSE`. Update core Properties 7, 8, 9, 16, 17 and `recover.prop.test.ts` (core Property 15, now for v1 and v2 active text).
     - _Requirements: 9.4, 9.5, 10.6_
-  - [ ] 4.6 Write property tests in `tests/property/session.prop.test.ts`
+  - [x] 4.6 Write property tests in `tests/property/session.prop.test.ts`
     - **Property 15: Permission and opening stay in their places**
     - **Property 16: Only listed transitions happen**
     - **Validates: Requirements 10.1, 10.2, 10.4, 10.5**
-  - [ ] 4.7 Write unit tests
+  - [x] 4.7 Write unit tests
     - Back from the Message_Screen keeps the Purpose. Back from the Duration_Menu shows the earlier Message. `back`, `bye`, and `0` submitted in the Purpose_Field are accepted as Purpose text. Duration_Menu `help` lines.
     - _Requirements: 3.2, 3.4, 3.5, 11.2_
 

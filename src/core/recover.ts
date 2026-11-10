@@ -1,7 +1,7 @@
-// Session recovery after a reload of the BLUELINE tab (Requirement 11, 14.3). Pure.
+// Session recovery after a reload of the BLUELINE tab (core Requirement 11, 14.3; Req 9). Pure.
 import { parseActive } from './record';
-import { initialState, type Session, type StepResult } from './session';
 import { endSession, scheduledEnd } from './session-end';
+import { initialState, type Session, type StepResult } from './session-state';
 
 /**
  * Decide the starting state from the stored Active_Session_State text.
@@ -17,7 +17,11 @@ export function recover(storedText: string | null, now: number, seq = 0): StepRe
   const active = parseActive(storedText);
   if (!active || active.start > now) return { state: base, effects: [{ type: 'clearActive' }] };
 
-  const session: Session = { id: seq + 1, start: active.start, plannedSec: active.plannedSec, label: active.label };
+  // The stored Purpose and Message come back with the Session (Req 9.2); null for a v1 state (Req 9.4).
+  const session: Session = {
+    id: seq + 1, start: active.start, plannedSec: active.plannedSec, label: active.label,
+    purpose: active.purpose, memo: active.memo,
+  };
   const connected = { ...base, phase: 'CONNECTED' as const, seq: session.id, session };
   if (now < scheduledEnd(session)) return { state: connected, effects: [] };
 

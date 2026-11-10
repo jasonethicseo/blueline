@@ -2,7 +2,7 @@
 // History is written in format v2 (with Post_Number, Purpose, Outcome). Format v1, written
 // before the purpose-board feature, is still read (Req 8.3, 13.3).
 import { durationBySeconds } from './config';
-import { isStoredPurpose } from './purpose';
+import { isStoredMemo, isStoredPurpose } from './purpose';
 
 export type Label = 'YOUTUBE' | 'INSTAGRAM' | 'CUSTOM';
 export type EndReason = 'TIME UP' | 'HANG UP';
@@ -33,16 +33,20 @@ export interface SessionRecord {
 /** A record before it is appended: `endRecord` makes it, `appendRecord` numbers it. */
 export type NewRecord = Omit<SessionRecord, 'no'>;
 
-/** A Session in progress, stored so a reload can recover it (Req 11). Contains no URL. */
+/** A Session in progress, stored so a reload can recover it (Req 9, core 11). Contains no URL. */
 export interface ActiveSession {
   start: number;
   plannedSec: number;
   label: Label;
+  /** Required in format v2; null only when read from a legacy (v1) active state (Req 9.4). */
+  purpose: string | null;
+  memo: string | null;
 }
 
 const HISTORY_VERSION = 2;
 const LEGACY_HISTORY_VERSION = 1;
-const ACTIVE_VERSION = 1;
+const ACTIVE_VERSION = 2;
+const LEGACY_ACTIVE_VERSION = 1;
 
 type Json = Record<string, unknown>;
 type Core = Omit<NewRecord, 'purpose' | 'outcome'>;
@@ -120,11 +124,18 @@ export function parseHistory(text: string): { ok: true; records: SessionRecord[]
   return { ok: true, records };
 }
 
+/** Written in format v2 with the Purpose and the Message; never a URL (Req 9.1). */
 export function serializeActive(a: ActiveSession): string {
-  return JSON.stringify({ v: ACTIVE_VERSION, start: a.start, plannedSec: a.plannedSec, label: a.label });
+  return JSON.stringify({
+    v: ACTIVE_VERSION, start: a.start, plannedSec: a.plannedSec, label: a.label, purpose: a.purpose, memo: a.memo,
+  });
 }
 
-/** Parse the stored active session; null if malformed (Req 11.5). The start > now check is in `recover`. */
+/**
+ * Parse the stored active session in format v2 or v1; null if malformed (core Req 11.5, Req 9.5).
+ * v2 needs a stored Purpose and a stored Message or null. v1 has neither (Req 9.4).
+ * The start > now check is in `recover`.
+ */
 export function parseActive(text: string): ActiveSession | null {
   let data: unknown;
   try {
@@ -132,9 +143,13 @@ export function parseActive(text: string): ActiveSession | null {
   } catch {
     return null;
   }
-  if (!isObject(data) || data.v !== ACTIVE_VERSION) return null;
-  const { start, plannedSec, label } = data;
+  if (!isObject(data)) return null;
+  const { v, start, plannedSec, label, purpose, memo } = data;
+  if (v !== ACTIVE_VERSION && v !== LEGACY_ACTIVE_VERSION) return null;
   if (!isFiniteNumber(start) || !isFiniteNumber(plannedSec) || !isLabel(label)) return null;
   if (!durationBySeconds(plannedSec)) return null;
-  return { start, plannedSec, label };
+  if (v === LEGACY_ACTIVE_VERSION) return { start, plannedSec, label, purpose: null, memo: null };
+  if (!isStoredPurpose(purpose)) return null;
+  if (memo !== null && !isStoredMemo(memo)) return null;
+  return { start, plannedSec, label, purpose, memo };
 }

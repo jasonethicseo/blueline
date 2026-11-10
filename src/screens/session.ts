@@ -1,4 +1,5 @@
-// Session_Screen (Requirement 6): label, elapsed, remaining, fee meter, hang-up controls.
+// Session_Screen (core Requirement 6; Req 1.9): label, Purpose, elapsed, remaining, fee meter, hang-up controls.
+import { NO_PURPOSE } from '../core/config';
 import { formatMMSS } from '../core/time';
 import type { AppState } from '../core/session';
 import { box } from './box';
@@ -22,6 +23,8 @@ export function render(root: HTMLElement, state: AppState, view: ViewModel): voi
     const hangUp = item('HANG UP', () => view.on.hangUp(), 'action');
     return [
       line(`CONNECTED TO ${session.label}`, 'title'),
+      // Plain text (Req 11.3); never in the tab title or a notification (Req 1.9, 11.6).
+      line(`PURPOSE: ${session.purpose ?? NO_PURPOSE}`),
       meter,
       line('FEES ARE FICTIONAL - NO MONETARY VALUE', 'dim'),
       el('p', 'line', 'TYPE BYE OR PRESS ESC TO HANG UP'),

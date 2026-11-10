@@ -7,6 +7,11 @@ export interface Handlers {
   dial(): void;
   menu(n: number): void;
   urlSubmit(text: string): void;
+  /** Enter in the Purpose_Field / Message_Field (Req 1.2, 2.2). */
+  purposeSubmit(text: string): void;
+  memoSubmit(text: string): void;
+  /** The user typed in a text field; clears a shown message (Req 1.7). */
+  typing(): void;
   back(): void;
   confirm(): void;
   linkOpened(): void;

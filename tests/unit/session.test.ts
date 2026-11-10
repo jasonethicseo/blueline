@@ -18,7 +18,11 @@ function run(events: Event[], start: AppState = initialState()) {
 }
 
 const toDest: Event[] = [{ type: 'DIAL' }, { type: 'HANDSHAKE_DONE' }, { type: 'SHOW_MENU' }];
-const toConfirm: Event[] = [...toDest, { type: 'GO', alias: 'ig' }, { type: 'MENU_KEY', n: 2 }];
+const PURPOSE = '릴스 세 개만';
+const toDuration: Event[] = [
+  ...toDest, { type: 'GO', alias: 'ig' }, { type: 'PURPOSE_SUBMIT', text: PURPOSE }, { type: 'MEMO_SUBMIT', text: '' },
+];
+const toConfirm: Event[] = [...toDuration, { type: 'MENU_KEY', n: 2 }];
 
 describe('dial', () => {
   it('plays the handshake once and shows the menu exactly once', () => {
@@ -37,7 +41,7 @@ describe('destination menu and URL entry', () => {
     const bad = run([...toDest, { type: 'MENU_KEY', n: 7 }]).state;
     expect(bad.message).toBe(MSG_INVALID_SELECTION);
     expect(bad.destination).toBeNull();
-    expect(run([{ type: 'MENU_KEY', n: 1 }], bad).state).toMatchObject({ message: null, phase: 'SELECT_DURATION' });
+    expect(run([{ type: 'MENU_KEY', n: 1 }], bad).state).toMatchObject({ message: null, phase: 'SET_PURPOSE' });
   });
 
   it('maps URL errors to their messages and accepts a valid URL as CUSTOM', () => {
@@ -46,7 +50,7 @@ describe('destination menu and URL entry', () => {
     expect(run([{ type: 'URL_SUBMIT', text: 'javascript:alert(1)' }], entry).state.message).toBe(MSG_INVALID_SCHEME);
     expect(run([{ type: 'URL_SUBMIT', text: '   ' }], entry).state.message).toBe(MSG_INVALID_URL);
     expect(run([{ type: 'URL_SUBMIT', text: 'example.com' }], entry).state).toMatchObject({
-      phase: 'SELECT_DURATION', destination: { label: 'CUSTOM', url: 'https://example.com' },
+      phase: 'SET_PURPOSE', textStep: 'purpose', destination: { label: 'CUSTOM', url: 'https://example.com' },
     });
   });
 
@@ -85,8 +89,11 @@ describe('duration menu and confirm screen', () => {
 
   it('a blocked popup waits for the link, then starts the session at link time', () => {
     const { state, effects } = run([...toConfirm, { type: 'CONFIRM' }, { type: 'POPUP_BLOCKED' }, { type: 'LINK_OPENED', now: T0 }]);
-    expect(state).toMatchObject({ phase: 'CONNECTED', session: { start: T0, plannedSec: 300, label: 'INSTAGRAM' } });
-    expect(effects).toContainEqual({ type: 'saveActive', active: { start: T0, plannedSec: 300, label: 'INSTAGRAM' } });
+    expect(state).toMatchObject({ phase: 'CONNECTED', session: { start: T0, plannedSec: 300, label: 'INSTAGRAM', purpose: PURPOSE, memo: null } });
+    expect(effects).toContainEqual({
+      type: 'saveActive', active: { start: T0, plannedSec: 300, label: 'INSTAGRAM', purpose: PURPOSE, memo: null },
+    });
+    expect(state.intent).toBeNull();
   });
 });
 
@@ -102,7 +109,9 @@ describe('connected and ended', () => {
 
   it('hang-up records floor(elapsed), the fee, and no notification', () => {
     const { state, effects } = run([{ type: 'HANG_UP', now: T0 + 61_900 }], connected);
-    expect(state.ended?.record).toMatchObject({ reason: 'HANG UP', actualSec: 61, fee: 80, end: T0 + 61_000 });
+    expect(state.ended?.record).toMatchObject({
+      reason: 'HANG UP', actualSec: 61, fee: 80, end: T0 + 61_000, purpose: PURPOSE, outcome: 'NO ANSWER',
+    });
     expect(effects.map((e) => e.type)).toEqual(['endSession', 'playNoCarrier']);
   });
 
