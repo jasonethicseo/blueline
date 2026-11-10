@@ -1,6 +1,6 @@
 // Summaries for the Dial_Screen, the Purpose_Screen, the Session_Screen, and the NO_CARRIER_Screen.
 // They reuse the receipt rules of history.ts (same end-timestamp rules). Pure: `now` is passed in.
-import { formatClock } from './display';
+import { formatClock, formatWon } from './display';
 import { outcomeCounts, periodStarts, setOutcome, totals, type Counts, type HistoryStatus } from './history';
 import type { NewRecord, SessionRecord } from './record';
 
@@ -101,4 +101,19 @@ export function preview(
     if (records[i]?.start === record.start) postNo = records[i]?.no ?? null;
   }
   return { ...periods(records, now), postNo };
+}
+
+/**
+ * The three text lines of the Dial_Screen (design Req 4.4–4.7). With no usable history the last-call line
+ * is FIRST CALL. WELCOME. and the week line shows zeros.
+ */
+export function dialLines(history: HistoryStatus | null, now: number): { greeting: string; last: string; week: string } {
+  const week = periods(stored(history), now).week;
+  const c = week.counts;
+  const last = lastCall(history, now);
+  return {
+    greeting: `반갑습니다 ^^  WELCOME BACK, CALLER #${String(callerNumber(history)).padStart(4, '0')}`,
+    last: last === null ? 'FIRST CALL. WELCOME.' : `LAST CALL: ${last}`,
+    week: `THIS WEEK: ${week.calls} CALLS · ${formatWon(week.fee)} · DONE ${c.done} · DRIFTED ${c.drifted} · NO ANSWER ${c.noAnswer}`,
+  };
 }

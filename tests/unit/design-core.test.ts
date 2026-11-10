@@ -4,7 +4,7 @@ import { CONNECT_TEXT, DIAL_TEXT } from '../../src/core/config';
 import { charCounter, formatWon, modemLines } from '../../src/core/display';
 import { GHOST_ASCII, ghostLayout, hauntLevel, hauntTiming, shouldHaunt } from '../../src/core/haunt';
 import type { SessionRecord } from '../../src/core/record';
-import { lastCall, preview, todaySoFar } from '../../src/core/summary';
+import { dialLines, lastCall, preview, todaySoFar } from '../../src/core/summary';
 
 const at = (y: number, mo: number, d: number, h: number, mi: number) => new Date(y, mo - 1, d, h, mi).getTime();
 
@@ -84,6 +84,7 @@ describe('modemLines', () => {
     const all = modemLines(5000, true);
     expect(all.map((l) => l.text)).toEqual(['ATZ', 'OK', DIAL_TEXT, 'DIALING...', 'RING... RING...', CONNECT_TEXT]);
     expect(all.at(-1)).toEqual({ text: 'CONNECT 2400', cls: 'connect' });
+    expect(all.map((l) => l.cls)).toEqual(['cmd', 'ok', 'cmd', 'resp', 'resp', 'connect']);
   });
   it('types the dial line one character at a time', () => {
     const typed = modemLines(660, false).at(-1);
@@ -102,5 +103,29 @@ describe('charCounter and formatWon', () => {
     expect(formatWon(1840)).toBe('₩1,840');
     expect(formatWon(0)).toBe('₩0');
     expect(formatWon(1234567)).toBe('₩1,234,567');
+  });
+});
+
+describe('dialLines (Dial_Screen text)', () => {
+  const now = at(2026, 11, 11, 12, 0); // a Wednesday; the week began on Monday the 9th
+  it('greets with a four-digit Caller_Number, then the last call and this week', () => {
+    const records = [
+      rec(at(2026, 11, 8, 20, 0), { no: 15, fee: 400, outcome: 'DONE' }), // last week
+      rec(at(2026, 11, 9, 9, 0), { no: 16, fee: 40, outcome: 'DONE' }),
+      rec(at(2026, 11, 10, 23, 41), { no: 17, fee: 1800, outcome: 'DRIFTED' }),
+    ];
+    const t = dialLines({ kind: 'ok', records }, now);
+    expect(t.greeting).toBe('반갑습니다 ^^  WELCOME BACK, CALLER #0018');
+    expect(t.last).toBe('LAST CALL: YESTERDAY 23:41 · 18:02 ON LINE · DRIFTED');
+    expect(t.week).toBe('THIS WEEK: 2 CALLS · ₩1,840 · DONE 1 · DRIFTED 1 · NO ANSWER 0');
+  });
+  it('says FIRST CALL with zeros when there is no history, an unreadable one, or no storage', () => {
+    for (const h of [null, { kind: 'unavailable' as const }, { kind: 'ok' as const, records: [] }, { kind: 'reset' as const, records: [] }]) {
+      expect(dialLines(h, now)).toEqual({
+        greeting: '반갑습니다 ^^  WELCOME BACK, CALLER #0001',
+        last: 'FIRST CALL. WELCOME.',
+        week: 'THIS WEEK: 0 CALLS · ₩0 · DONE 0 · DRIFTED 0 · NO ANSWER 0',
+      });
+    }
   });
 });

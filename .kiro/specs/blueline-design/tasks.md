@@ -81,7 +81,7 @@ Conventions for every task:
     - `frameFor` keys and status per view, no Purpose or Message in either bar; the contrast table for every Palette pair used, with the faint and strong Scanline_Layer factors, all ≥ 4.5:1.
     - _Requirements: 1.7, 2.2, 2.3_
 
-- [ ] 5. Dial screen
+- [x] 5. Dial screen
   - Two columns: Modem_Log from `modemLines` (the `ATDT` line typed as now, `CONNECT 2400` in green when the handshake ends) and the double box with `BLUELINE` in `.display-l`, tagline, greeting with `CALLER #<nnnn>`, last call, this week, `ENTER · DIAL IN`. A tap anywhere still dials; core timing rules unchanged.
   - Update the dial unit tests and texts.
   - _Requirements: 4.1–4.8_

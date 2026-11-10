@@ -27,8 +27,6 @@ export interface Handlers {
 
 /** Values the shell computes from `now` before each render. */
 export interface ViewModel {
-  /** How many characters of DIAL_TEXT are typed so far. */
-  dialTyped: number;
   elapsedSec: number;
   remainingSec: number;
   fee: number;

@@ -28,8 +28,8 @@ export function formatClock(sec: number): string {
 
 export interface ModemLine {
   text: string;
-  /** `cmd` (we send), `resp` (the modem answers), `connect` (green, last). */
-  cls: 'cmd' | 'resp' | 'connect';
+  /** `cmd` (we send), `ok` (the modem's OK), `resp` (other answers), `connect` (green, last). */
+  cls: 'cmd' | 'ok' | 'resp' | 'connect';
 }
 
 /**
@@ -44,7 +44,7 @@ export function modemLines(elapsedMs: number, connectShown: boolean): ModemLine[
     const isCommand = entry.text.startsWith('AT');
     // Only the dialed number is typed; the other lines appear whole.
     const text = entry.text === DIAL_TEXT ? entry.text.slice(0, typed) : entry.text;
-    lines.push({ text, cls: isCommand ? 'cmd' : 'resp' });
+    lines.push({ text, cls: isCommand ? 'cmd' : text === 'OK' ? 'ok' : 'resp' });
   }
   if (connectShown) lines.push({ text: CONNECT_TEXT, cls: 'connect' });
   return lines;

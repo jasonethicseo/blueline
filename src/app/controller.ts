@@ -1,6 +1,6 @@
 // Shell: owns the one mutable AppState, reads the clock, runs effects, and drives timers.
 // Lives outside src/core because it uses timers, Date.now(), and browser APIs.
-import { DIAL_TEXT, TIMING } from '../core/config';
+import { TIMING } from '../core/config';
 import { fee } from '../core/fee';
 import { buildReceipt, keepReset, type HistoryStatus, type ReceiptModel } from '../core/history';
 import { viewOf } from '../core/commands';
@@ -147,7 +147,6 @@ export function createController(render: (c: Controller) => void): Controller {
     const rec = state.phase === 'ENDED' ? state.ended?.record : undefined;
     const elapsed = rec ? rec.actualSec : s ? elapsedSeconds(s.start, now, s.plannedSec) : 0;
     return {
-      dialTyped: dialStart ? Math.min(DIAL_TEXT.length, Math.floor((now - dialStart) / TIMING.charMs) + 1) : 0,
       elapsedSec: elapsed,
       remainingSec: rec ? rec.plannedSec - rec.actualSec : s ? remainingSeconds(s.start, now, s.plannedSec) : 0,
       fee: fee(elapsed),
