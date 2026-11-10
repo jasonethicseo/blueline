@@ -34,6 +34,7 @@ const PAIRS: [fg: string, bg: string, alpha: number][] = [
   ['bar-fg-black', 'yellow', FAINT], // the Purpose_Band
   ['text', 'hangup-red', FAINT],
   ['bg-black', 'text-dim', FAINT],
+  ['bg-black', 'green', FAINT], // the Y button
   ['bg-black', 'text', FAINT],
 ];
 

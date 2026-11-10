@@ -5,10 +5,11 @@ import { el } from './view';
 /** A row is plain text, an element (e.g. a menu button), or several inline nodes. */
 export type Row = string | HTMLElement | Node[];
 
-export type BoxStyle = 'double' | 'dashed';
+/** `double` or `dashed`, optionally followed by a color class such as `yellow`. */
+export type BoxStyle = 'double' | 'dashed' | 'double yellow';
 
 export function box(rows: Row[], style: BoxStyle = 'double'): HTMLDivElement {
-  const wrap = el('div', `box box-${style}`);
+  const wrap = el('div', `box box-${style.split(' ').join(' box-')}`);
   for (const r of rows) {
     const row = el('div', 'box-row');
     if (typeof r === 'string') row.textContent = r;

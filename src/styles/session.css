@@ -1,6 +1,7 @@
-/* The Session_Screen (design Req 7). Loaded after entry.css.
+/* The Session_Screen and the NO_CARRIER_Screen (design Req 7, 8). Loaded after entry.css.
    Class names: .purpose-band, .band-label, .band-text, .session-numbers, .big, .progress, .progress-bar,
-   .session-actions, .action.danger */
+   .session-actions, .action.danger, .nc-head, .memo-text, .nc-question, .action.green, .receipt-preview,
+   .preview-head, .preview-total, .post-line */
 
 .purpose-band {
   display: flex;
@@ -77,5 +78,65 @@
   .progress-bar {
     font-size: 11px;
     letter-spacing: 1px;
+  }
+}
+
+/* NO_CARRIER_Screen: the main column, and the Receipt_Preview with a dashed rule on its left. */
+.nc-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.memo-text {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.nc-question {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.action.green {
+  border: 0;
+  background: var(--green);
+  color: var(--bg-black);
+}
+
+.action.green:hover,
+.action.green:focus-visible {
+  background: var(--text);
+}
+
+.receipt-preview {
+  gap: 10px;
+  padding-left: 28px;
+  border-left: 1px dashed var(--text-dim);
+  color: var(--text-dim);
+}
+
+.receipt-preview span {
+  display: block;
+}
+
+.preview-head,
+.preview-total {
+  color: var(--text);
+}
+
+.post-line {
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+@media (max-width: 599px) {
+  .receipt-preview {
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px dashed var(--text-dim);
   }
 }

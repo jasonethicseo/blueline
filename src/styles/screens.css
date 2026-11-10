@@ -1,7 +1,7 @@
-/* Screen parts: CSS boxes, two-column layouts, the NO CARRIER Message and answers, and the Board.
+/* Screen parts: CSS boxes, two-column layouts, and the Board.
    Split out of crt.css to keep each file under about 200 lines. Loaded after crt.css.
-   Class names used by src/screens/*: .box, .box-double, .box-dashed, .box-row, .box-indent,
-   .cols, .col-main, .col-side, .counts, .choices, .memo, .board, .board-row, .board-head, .board-no,
+   Class names used by src/screens/*: .box, .box-double, .box-dashed, .box-yellow, .box-row, .box-indent,
+   .cols, .col-main, .col-side, .counts, .choices, .board, .board-row, .board-head, .board-no,
    .board-date, .board-time, .board-mark, .mark-long, .mark-short, .board-purpose */
 
 /* A box drawn by CSS borders (design Req 2.4), never by + - | characters. */
@@ -21,6 +21,10 @@
 
 .box-dashed {
   border: 1px dashed var(--text-dim);
+}
+
+.box-yellow {
+  border-color: var(--yellow);
 }
 
 /* pre-wrap keeps the padded label columns ("SESSION FEE  ₩40") and still wraps long text. */
@@ -86,13 +90,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1ch;
-}
-
-/* The Message on the NO_CARRIER_Screen (Req 4.1). */
-.memo {
-  margin: 0.5rem 0;
-  padding: 0.25rem 1ch;
-  border: 4px double var(--yellow);
 }
 
 /* Board_Screen (Req 7.3, 7.10). 600 px and wider: one line per post with the Outcome word.

@@ -94,7 +94,7 @@ Conventions for every task:
   - Purpose_Band, two `.display-xl` numbers with their labels, Progress_Bar with a text equivalent, `LEFT · TODAY … CALLS · ₩…`, `ESC · HANG UP` in hangup-red and `OR TYPE BYE`, `● ON LINE` badge. Text-only updates every 250 ms as now.
   - _Requirements: 7.1–7.6, 11.4_
 
-- [ ] 8. NO CARRIER screen
+- [x] 8. NO CARRIER screen
   - Black theme, `+++ ATH0`, `NO CARRIER` in `.display-xl`, booked / on line / fee line, yellow double Message box with `SENT <MM:SS> AGO` (from `shownAt`), Purpose, question, green and outline answer buttons, Receipt_Preview column with the Post_Number line, the Function_Key_Bar hint. No-Purpose Sessions keep the core move-on.
   - _Requirements: 8.1–8.7_
 
