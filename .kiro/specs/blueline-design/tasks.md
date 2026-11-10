@@ -102,7 +102,7 @@ Conventions for every task:
   - Create `src/screens/haunted.ts` and `src/styles/haunted.css`: ghost layer from `ghostLayout` (aria-hidden, no pointer input), ASCII ghost, strong Scanline_Layer, title in `.display-m` red with a cyan offset, drift lines and the red Purpose box updated each second, billed line, `ENTER · FACE IT`. Flicker only under `prefers-reduced-motion: no-preference`.
   - _Requirements: 9.3–9.8, 9.11, 11.1, 11.2_
 
-- [ ] 10. Checkpoint and browser checks
+- [x] 10. Checkpoint and browser checks
   - `npm test` (both time zones), `npm run build`, file sizes, the core rules, and `.kiro/steering/structure.md` updated with the new files.
   - Headless Chrome at 360 and 1280 px (scripts outside the repo): every screen has the frame; no horizontal scroll; Display_Face lines fit; only Palette colors in computed styles; focus outline; the Haunted_Screen after a hidden Time_Up with the demo duration (Grace_Period 10 s), the level growing over 60 s, no flicker under reduced motion, then NO CARRIER with the Message; reload cases (가) and (나); demo timing both ways under 150 s. Record the results in `docs/manual-checks.md` part D.
   - _Requirements: 1.1, 1.7, 3.1, 3.2, 9.12, 9.13, 12.1–12.6_
