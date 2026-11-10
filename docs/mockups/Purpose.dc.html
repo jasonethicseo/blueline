@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BLUELINE purpose and note</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&amp;family=VT323&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#55FFFF}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 960px; height: 600px; box-sizing: border-box; background: #0000AA; color: #FFFFFF; font-family: 'Nanum Gothic Coding', monospace; display: flex; flex-direction: column; overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: center; background: #00AAAA; color: #000000; padding: 6px 16px; font-size: 14px; font-weight: 700">
+<span>BLUELINE 2.4</span>
+<span>DESTINATION: 1. YOUTUBE</span>
+<span>FEE ₩40/MIN (FICTIONAL)</span>
+<span>CONNECTED · NOT ON LINE YET</span>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 22px; padding: 28px 40px">
+<div style="display: flex; align-items: baseline; gap: 16px">
+<span style="font-family: VT323, monospace; font-size: 48px; color: #FFFF55">[ STATE YOUR PURPOSE ]</span>
+<span style="font-size: 14px; color: #AAAAAA">무엇을 하러 들어가십니까?</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="purpose" style="font-size: 15px; color: #55FFFF">PURPOSE (REQUIRED · 1–60 CHARS)</label>
+<div style="display: flex; align-items: center; gap: 12px">
+<input id="purpose" type="text" value="버그 해결 영상 하나만" style="flex-grow: 1; min-height: 48px; box-sizing: border-box; padding: 0 14px; background: #000000; color: #FFFFFF; border: 2px solid #FFFFFF; font-family: inherit; font-size: 20px">
+<span style="font-size: 15px; color: #AAAAAA">12/60</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="note" style="font-size: 15px; color: #55FFFF">MESSAGE TO FUTURE YOU (OPTIONAL · ARRIVES AT NO CARRIER)</label>
+<div style="display: flex; align-items: center; gap: 12px">
+<input id="note" type="text" value="끝나면 바로 코드로 돌아와. 쇼츠 금지." style="flex-grow: 1; min-height: 48px; box-sizing: border-box; padding: 0 14px; background: #000000; color: #FFFF55; border: 2px solid #AAAAAA; font-family: inherit; font-size: 18px">
+<span style="font-size: 15px; color: #AAAAAA">21/120</span>
+</div>
+</div>
+<div style="border: 1px dashed #AAAAAA; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: #AAAAAA">
+<span style="color: #FFFFFF">SYSOP NOTICE</span>
+<span>최근 7일: 목적을 지킨 접속 3 / 떠내려간 접속 2. 오늘은 지켜봅시다 ^^</span>
+</div>
+<div style="display: flex; gap: 16px; margin-top: auto">
+<button type="button" style="min-height: 48px; padding: 0 22px; background: transparent; color: #FFFFFF; border: 2px solid #FFFFFF; font-family: inherit; font-size: 16px; cursor: pointer">ESC · BACK</button>
+<button type="button" style="min-height: 48px; padding: 0 26px; background: #AAAAAA; color: #000000; border: 0; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">ENTER · NEXT: DURATION</button>
+</div>
+</div>
+<div style="display: flex; gap: 24px; background: #000000; color: #FFFFFF; padding: 8px 16px; font-size: 14px">
+<span><span style="color: #FFFF55">ENTER</span> NEXT</span>
+<span><span style="color: #FFFF55">ESC</span> BACK</span>
+<span style="color: #AAAAAA">한글 입력 중 Enter는 제출되지 않음</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":600}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
