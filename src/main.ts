@@ -6,6 +6,7 @@ import { attachInput, usedPointer } from './app/input';
 import * as dial from './screens/dial';
 import * as menu from './screens/menu';
 import * as purpose from './screens/purpose';
+import * as board from './screens/board';
 import * as confirm from './screens/confirm';
 import * as session from './screens/session';
 import * as nocarrier from './screens/nocarrier';
@@ -26,6 +27,7 @@ function route(c: Controller): void {
     case 'destination':
     case 'urlEntry':
     case 'duration': return menu.render(screen, state, view);
+    case 'board': return board.render(screen, state, view);
     case 'purpose':
     case 'memo': return purpose.render(screen, state, view);
     case 'confirm': return confirm.render(screen, state, view);

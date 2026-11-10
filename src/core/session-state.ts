@@ -2,6 +2,7 @@
 // (session.ts, session-intent.ts, session-end.ts). Pure. Keeping them here means the
 // reducer files import from this module and never from each other, so there is no cycle.
 import type { Alias } from './config';
+import type { HistoryStatus } from './history';
 import type { ActiveSession, Label, NewRecord, Outcome } from './record';
 
 export const MSG_INVALID_SELECTION = 'INVALID SELECTION';
@@ -27,6 +28,9 @@ export interface Session {
 /** What the user wrote on the Purpose_Screen and the Message_Screen, before connecting. */
 export interface Intent { purpose: string | null; memo: string | null }
 
+/** The Board_Screen (SELECT_DEST only). `history` is null until the stored history has been read. */
+export interface Board { page: number; history: HistoryStatus | null }
+
 export interface AppState {
   phase: Phase;
   seq: number;
@@ -39,6 +43,8 @@ export interface AppState {
   intent: Intent | null;
   /** Which field SET_PURPOSE shows. */
   textStep: 'purpose' | 'memo';
+  /** Non-null while the Board_Screen is shown (Req 7). */
+  board: Board | null;
   confirm: { plannedSec: number } | null;
   pending: { plannedSec: number; blocked: boolean } | null;
   notifyAsked: boolean;
@@ -58,6 +64,7 @@ export type Event =
   | { type: 'OPENED'; now: number } | { type: 'POPUP_BLOCKED' } | { type: 'LINK_OPENED'; now: number }
   | { type: 'TICK'; now: number } | { type: 'HANG_UP'; now: number }
   | { type: 'NOCARRIER_DONE' } | { type: 'ANSWER'; yes: boolean } | { type: 'DIAL_AGAIN' }
+  | { type: 'BOARD_LOADED'; history: HistoryStatus } | { type: 'BOARD_PAGE'; dir: 'next' | 'prev' }
   | { type: 'MESSAGE'; text: string | null };
 
 export type Effect =
@@ -69,6 +76,8 @@ export type Effect =
   | { type: 'endSession'; record: NewRecord }
   /** Write the answered Outcome into the stored record with this start (Req 5.3, 5.4, 8.9). */
   | { type: 'saveOutcome'; start: number; outcome: Outcome }
+  /** Read the stored history for the Board; the shell answers with BOARD_LOADED (Req 7.2, 7.11). */
+  | { type: 'loadBoard' }
   | { type: 'notifyTimeUp' };
 
 export interface StepResult { state: AppState; effects: Effect[] }
@@ -76,7 +85,7 @@ export interface StepResult { state: AppState; effects: Effect[] }
 export function initialState(seq = 0): AppState {
   return {
     phase: 'IDLE', seq, message: null, dial: { connectShown: false }, urlEntry: false,
-    destination: null, intent: null, textStep: 'purpose', confirm: null, pending: null,
+    destination: null, intent: null, textStep: 'purpose', board: null, confirm: null, pending: null,
     notifyAsked: false, session: null, ended: null,
   };
 }
@@ -84,9 +93,9 @@ export function initialState(seq = 0): AppState {
 export const same = (state: AppState): StepResult => ({ state, effects: [] });
 export const say = (state: AppState, message: string): StepResult => ({ state: { ...state, message }, effects: [] });
 
-/** Back to the Destination_Menu: no Destination, no Purpose, no Message kept (core Req 2.7, Req 1.8, 3.3). */
+/** Back to the Destination_Menu: no Destination, no Purpose, no Message, no Board (core Req 2.7, Req 1.8, 3.3, 7.7). */
 export const toDestMenu = (s: AppState): StepResult =>
   same({
     ...s, phase: 'SELECT_DEST', urlEntry: false, destination: null, intent: null, textStep: 'purpose',
-    confirm: null, pending: null,
+    board: null, confirm: null, pending: null,
   });

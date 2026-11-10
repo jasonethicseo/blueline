@@ -154,24 +154,24 @@ Conventions for every task:
     - The Message is shown after a Hang_Up and after a Time_Up; no heading without a Message. With a Purpose: no move-on after 3 s, on Enter, on a tap, or on Esc; only the first answer counts; `PRESS Y OR N` for Enter, digits, and other text. A Session recovered from a v1 active state asks nothing, moves on, and records NO ANSWER. The receipt shows the answered Outcome when `saveOutcome` fails. `HISTORY RESET` is still shown after the answer is saved.
     - _Requirements: 4.1, 4.3, 5.2, 5.6, 5.7, 5.8, 5.9, 5.11, 13.7_
 
-- [ ] 6. Board
-  - [ ] 6.1 Create `src/core/board.ts`
+- [x] 6. Board
+  - [x] 6.1 Create `src/core/board.ts`
     - `localDate`, `boardPage` (rows with `no`, `date`, `purpose`, `time`, `outcome`, `mark`), `boardStep` (`BOARD_LOADED`, `BOARD_PAGE`, back, digits).
     - _Requirements: 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.13_
-  - [ ] 6.2 Wire the Board into the menu, commands, effects, and input
+  - [x] 6.2 Wire the Board into the menu, commands, effects, and input
     - `MENU_KEY 4` on the Destination_Menu → `board` + `loadBoard` effect → `BOARD_LOADED`. `toDestMenu` clears `board`.
     - Commands `n` and `p` on the Board, `4 - BOARD` in the Destination_Menu `help`, and the Board `help` lines. `input.ts`: `n`/`p` keys and digits on the Board. Escape on the Board → back.
     - _Requirements: 7.1, 7.2, 7.5, 7.6, 7.7, 7.11, 7.13, 11.2_
-  - [ ] 6.3 Create `src/screens/board.ts` and update `screens/menu.ts` and `crt.css`
+  - [x] 6.3 Create `src/screens/board.ts` and update `screens/menu.ts` and `crt.css`
     - `4. BOARD` item and the hint `PRESS 1-4, OR TYPE GO YT / GO IG`.
     - Board title, `PAGE p/n`, the header, rows with `.mark-long` and `.mark-short`, `NO POSTS` and notices, and the `N. NEXT`, `P. PREV`, `0. BACK` buttons (≥ 44 px).
     - The grid shows one line per post at 600 px and wider. Below 600 px, the Purpose goes on a second line and only `Y`/`N`/`?` is shown. `overflow-wrap: anywhere`.
     - _Requirements: 7.1, 7.3, 7.8, 7.9, 7.10, 7.12, 11.3, 11.4, 11.5_
-  - [ ] 6.4 Write property test in `tests/property/board.prop.test.ts`
+  - [x] 6.4 Write property test in `tests/property/board.prop.test.ts`
     - **Property 12: Board pages cover the history**
     - Add this file to the `new-york` project in `vitest.config.ts`.
     - **Validates: Requirements 7.3, 7.4**
-  - [ ] 6.5 Write unit tests
+  - [x] 6.5 Write unit tests
     - Empty history → `PAGE 1/1` and `NO POSTS`. 21 records → 2 pages. `NO MORE PAGES` at both ends. Digits 1–9 → `INVALID SELECTION`. `reset` and `unavailable` notices. Opening and paging return no effects other than `loadBoard`. `n` on the Destination_Menu → `COMMAND NOT AVAILABLE HERE - TYPE HELP`.
     - _Requirements: 7.5, 7.6, 7.8, 7.9, 7.11, 7.13_
 

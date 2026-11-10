@@ -163,6 +163,7 @@ export function createController(render: (c: Controller) => void): Controller {
     noCarrierDone: () => dispatch({ type: 'NOCARRIER_DONE' }),
     // Not during the held 00:00 frame, so the user has seen the question (Req 5.1).
     answer: (yes) => { if (!finalFrame()) dispatch({ type: 'ANSWER', yes }); },
+    page: (dir) => dispatch({ type: 'BOARD_PAGE', dir }),
   };
 
   const keys = createKeys({ state: () => state, dispatch, handlers });

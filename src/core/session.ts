@@ -3,6 +3,7 @@
 import { PRESETS, ALIASES, durationByKey, type PresetLabel } from './config';
 import { normalizeUrl } from './url';
 import { endSession, reasonAt, scheduledEnd } from './session-end';
+import { boardStep } from './board';
 import { endedStep } from './session-ended';
 import { intentStep } from './session-intent';
 import {
@@ -15,7 +16,7 @@ export * from './session-state';
 // User inputs clear the previous message before they are handled (core Req 2.6, 4.5; Req 1.7).
 const USER_INPUTS = new Set<Event['type']>([
   'DIAL', 'DIAL_SKIP', 'MENU_KEY', 'GO', 'URL_SUBMIT', 'BACK', 'CONFIRM',
-  'PURPOSE_SUBMIT', 'MEMO_SUBMIT', 'TYPING', 'ANSWER',
+  'PURPOSE_SUBMIT', 'MEMO_SUBMIT', 'TYPING', 'ANSWER', 'BOARD_PAGE',
   'LINK_OPENED', 'HANG_UP', 'NOCARRIER_DONE', 'DIAL_AGAIN',
 ]);
 
@@ -55,11 +56,14 @@ function dialing(s: AppState, e: Event): StepResult {
 }
 
 function destinationMenu(s: AppState, e: Event): StepResult {
+  if (s.board) return boardStep(s, e);
   if (e.type === 'GO') return toPurpose(s, preset(ALIASES[e.alias]));
   if (e.type !== 'MENU_KEY') return same(s);
   if (e.n === 1) return toPurpose(s, preset('YOUTUBE'));
   if (e.n === 2) return toPurpose(s, preset('INSTAGRAM'));
   if (e.n === 3) return same({ ...s, urlEntry: true });
+  // The Board reads the stored history through an effect, so this reducer stays pure (Req 7.2).
+  if (e.n === 4) return { state: { ...s, board: { page: 1, history: null } }, effects: [{ type: 'loadBoard' }] };
   return say(s, MSG_INVALID_SELECTION);
 }
 

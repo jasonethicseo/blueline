@@ -10,8 +10,11 @@ function destinationMenu(view: ViewModel): Node[] {
   const pick = (n: number) => () => view.on.menu(n);
   return [
     line('MAIN MENU', 'title'),
-    box([item('1. YOUTUBE', pick(1)), item('2. INSTAGRAM', pick(2)), item('3. CUSTOM URL', pick(3))]),
-    line('PRESS 1-3, OR TYPE GO YT / GO IG', 'dim'),
+    box([
+      item('1. YOUTUBE', pick(1)), item('2. INSTAGRAM', pick(2)), item('3. CUSTOM URL', pick(3)),
+      item('4. BOARD', pick(4)),
+    ]),
+    line('PRESS 1-4, OR TYPE GO YT / GO IG', 'dim'),
   ];
 }
 

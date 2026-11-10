@@ -66,6 +66,10 @@ export function runEffect(fx: Effect, host: EffectHost): void {
       }
       return;
     }
+    case 'loadBoard':
+      // Read only; the Board never writes (Req 7.11). Queued, so it runs in this same dispatch.
+      host.queue({ type: 'BOARD_LOADED', history: storage.loadHistory() });
+      return;
     case 'notifyTimeUp':
       // Notification if permitted; otherwise flash the title while hidden (Req 7.3, 7.5).
       if (!notify.show('NO CARRIER', 'SESSION TIME IS UP.') && !page.isVisible()) page.startTitleFlash();

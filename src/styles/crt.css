@@ -181,6 +181,55 @@ button {
   border: 1px dashed var(--em);
 }
 
+/* Board_Screen (Req 7.3, 7.10). 600 px and wider: one line per post with the Outcome word.
+   Narrower (a Narrow viewport, NARROW_MAX_PX in config.ts): the Purpose moves to a second
+   line and the Outcome shows as Y / N / ?. The hidden copy uses display: none, so screen
+   readers read one of them. */
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: 5ch 10ch 5ch 9ch minmax(0, 1fr);
+  column-gap: 1ch;
+  align-items: start;
+}
+
+.board-head {
+  color: var(--dim);
+}
+
+.board-purpose {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mark-short {
+  display: none;
+}
+
+@media (max-width: 599px) {
+  .board-row {
+    grid-template-columns: 5ch 10ch 5ch 3ch;
+  }
+
+  .board-purpose {
+    grid-column: 1 / -1;
+    padding-left: 2ch;
+  }
+
+  .mark-long {
+    display: none;
+  }
+
+  .mark-short {
+    display: inline;
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--em);
   outline-offset: 2px;

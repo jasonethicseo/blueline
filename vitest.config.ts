@@ -19,7 +19,10 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'new-york',
-          include: ['tests/property/history.prop.test.ts', 'tests/property/outcomes.prop.test.ts'],
+          include: [
+            'tests/property/history.prop.test.ts', 'tests/property/outcomes.prop.test.ts',
+            'tests/property/board.prop.test.ts',
+          ],
           env: { TZ: 'America/New_York' },
         },
       },

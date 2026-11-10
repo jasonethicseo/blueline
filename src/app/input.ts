@@ -3,9 +3,9 @@
 import { viewOf, type ViewName } from '../core/commands';
 import type { Controller } from './controller';
 
-// Screens where a bare digit key is a menu selection (core Req 2.3, 4.3, 4.8, 9.9), or shows
-// PRESS Y OR N while NO CARRIER asks PURPOSE ACHIEVED? (Req 5.6).
-const DIGIT_VIEWS = new Set<ViewName>(['destination', 'duration', 'confirm', 'receipt', 'nocarrierCheck']);
+// Screens where a bare digit key is a menu selection (core Req 2.3, 4.3, 4.8, 9.9), shows
+// PRESS Y OR N while NO CARRIER asks PURPOSE ACHIEVED? (Req 5.6), or works the Board (Req 7.7, 7.13).
+const DIGIT_VIEWS = new Set<ViewName>(['destination', 'board', 'duration', 'confirm', 'receipt', 'nocarrierCheck']);
 
 let pointer = false;
 
@@ -62,6 +62,15 @@ export function attachInput(c: Controller, prompt: HTMLInputElement, form: HTMLF
       if (!typing) {
         e.preventDefault();
         c.handlers.answer(e.key.toLowerCase() === 'y');
+      }
+      return;
+    }
+
+    // N (older) or P (newer) pages the Board, in either letter case (Req 7.5, 7.6).
+    if (view === 'board' && /^[np]$/i.test(e.key)) {
+      if (!typing) {
+        e.preventDefault();
+        c.handlers.page(e.key.toLowerCase() === 'n' ? 'next' : 'prev');
       }
       return;
     }

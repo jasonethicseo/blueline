@@ -11,8 +11,12 @@ export type Command =
   /** A one-word answer; accepted only where a screen asks for it (Req 5.3, 5.4). */
   | { kind: 'word'; word: Word };
 
-export type Word = 'y' | 'yes' | 'n' | 'no';
-const WORDS: readonly Word[] = ['y', 'yes', 'n', 'no'];
+export type Word = 'y' | 'yes' | 'n' | 'no' | 'p';
+const WORDS: readonly Word[] = ['y', 'yes', 'n', 'no', 'p'];
+/** The words that answer PURPOSE ACHIEVED? (Req 5.3, 5.4). */
+export const ANSWER_WORDS: readonly Word[] = ['y', 'yes', 'n', 'no'];
+/** The words that page the Board: N next (older), P prev (newer) (Req 7.5, 7.6). */
+export const PAGE_WORDS: readonly Word[] = ['n', 'p'];
 
 export type ParseResult =
   | { type: 'empty' }
@@ -26,7 +30,7 @@ export type ParseResult =
  * `nocarrier` is the one for a Session without a Purpose (Req 5.1, 5.9).
  */
 export type ViewName =
-  | 'dial' | 'destination' | 'urlEntry' | 'purpose' | 'memo' | 'duration' | 'confirm' | 'session'
+  | 'dial' | 'destination' | 'urlEntry' | 'board' | 'purpose' | 'memo' | 'duration' | 'confirm' | 'session'
   | 'nocarrier' | 'nocarrierCheck' | 'receipt';
 
 /** Which screen the state shows; decides accepted commands and key handling. */
@@ -36,6 +40,7 @@ export function viewOf(state: AppState): ViewName {
     case 'DIALING':
       return 'dial';
     case 'SELECT_DEST':
+      if (state.board) return 'board';
       return state.urlEntry ? 'urlEntry' : 'destination';
     case 'SET_PURPOSE':
       return state.textStep;
@@ -75,9 +80,15 @@ export function acceptedCommands(view: ViewName): string[] {
     case 'dial':
       return ['ENTER - DIAL (SKIP WHILE DIALING)', HELP_LINE];
     case 'destination':
-      return ['1 - YOUTUBE', '2 - INSTAGRAM', '3 - CUSTOM URL', 'GO YT - YOUTUBE', 'GO IG - INSTAGRAM', HELP_LINE];
+      return [
+        '1 - YOUTUBE', '2 - INSTAGRAM', '3 - CUSTOM URL', '4 - BOARD', 'GO YT - YOUTUBE', 'GO IG - INSTAGRAM', HELP_LINE,
+      ];
     case 'urlEntry':
       return ['ENTER - SUBMIT URL', 'BACK - DESTINATION MENU', HELP_LINE];
+    case 'board':
+      return [
+        'N - NEXT (OLDER) PAGE', 'P - PREV (NEWER) PAGE', '0 - BACK', 'ESC - BACK', 'BACK - MAIN MENU', HELP_LINE,
+      ];
     // No Command_Prompt on these screens, so `help` cannot be typed there; listed for completeness.
     case 'purpose':
       return ['ENTER - SUBMIT PURPOSE', 'ESC - BACK (MAIN MENU)'];
@@ -106,6 +117,9 @@ export function isAccepted(view: ViewName, command: Command): boolean {
       return command.kind === 'number' || command.kind === 'go';
     case 'urlEntry':
       return command.kind === 'back';
+    case 'board':
+      return command.kind === 'number' || command.kind === 'back'
+        || (command.kind === 'word' && PAGE_WORDS.includes(command.word));
     case 'duration':
       return command.kind === 'number' || command.kind === 'back';
     case 'confirm':
@@ -113,7 +127,7 @@ export function isAccepted(view: ViewName, command: Command): boolean {
     case 'session':
       return command.kind === 'bye';
     case 'nocarrierCheck':
-      return command.kind === 'word';
+      return command.kind === 'word' && ANSWER_WORDS.includes(command.word);
     case 'receipt':
       return command.kind === 'number';
     case 'dial':
@@ -140,7 +154,7 @@ export function resolveInput(view: ViewName, text: string): InputAction {
   const r = parseCommand(text);
   if (view === 'nocarrierCheck') {
     if (r.type === 'command' && r.command.kind === 'help') return { kind: 'help', lines: acceptedCommands(view) };
-    if (r.type === 'command' && r.command.kind === 'word') return { kind: 'command', command: r.command };
+    if (r.type === 'command' && isAccepted(view, r.command)) return { kind: 'command', command: r.command };
     return { kind: 'message', text: MSG_PRESS_Y_OR_N };
   }
   switch (r.type) {

@@ -1,5 +1,6 @@
 // Generators and a replay helper for state machine property tests.
 import fc from 'fast-check';
+import type { HistoryStatus } from '../../src/core/history';
 import { initialState, step, type AppState, type Effect, type Event } from '../../src/core/session';
 
 /** A fixed clock origin; event times are offsets around it. */
@@ -28,6 +29,9 @@ export const anyEvent: fc.Arbitrary<Event> = fc.oneof(
   time.map((now): Event => ({ type: 'HANG_UP', now })),
   simple('NOCARRIER_DONE'), simple('DIAL_AGAIN'),
   fc.boolean().map((yes): Event => ({ type: 'ANSWER', yes })),
+  fc.constantFrom('next', 'prev').map((dir): Event => ({ type: 'BOARD_PAGE', dir: dir as 'next' | 'prev' })),
+  fc.constantFrom<HistoryStatus>({ kind: 'ok', records: [] }, { kind: 'reset', records: [] }, { kind: 'unavailable' })
+    .map((history): Event => ({ type: 'BOARD_LOADED', history })),
   fc.constantFrom('X', null).map((text): Event => ({ type: 'MESSAGE', text })),
 );
 
@@ -46,6 +50,7 @@ const toReceipt: Event[] = [...toEnded, { type: 'ANSWER', yes: true }];
 
 export const prefix = fc.constantFrom<Event[]>(
   [], [{ type: 'DIAL' }], toDest, [...toDest, { type: 'MENU_KEY', n: 3 }], toPurpose, toMemo,
+  [...toDest, { type: 'MENU_KEY', n: 4 }],
   [...toDest, { type: 'MENU_KEY', n: 2 }, { type: 'PURPOSE_SUBMIT', text: PURPOSE }, { type: 'MEMO_SUBMIT', text: '' }],
   toDuration, toConfirm, toPending, [...toPending, { type: 'POPUP_BLOCKED' }], toConnected, toEnded, toReceipt,
 );

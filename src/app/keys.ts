@@ -36,7 +36,8 @@ export function createKeys(c: KeyContext): Keys {
   }
 
   function submit(text: string): void {
-    const action = resolveInput(viewOf(c.state()), text);
+    const view = viewOf(c.state());
+    const action = resolveInput(view, text);
     if (action.kind === 'none') return enter();
     if (action.kind === 'message') return c.dispatch({ type: 'MESSAGE', text: action.text });
     if (action.kind === 'help') return c.dispatch({ type: 'MESSAGE', text: action.lines.join('\n') });
@@ -45,6 +46,9 @@ export function createKeys(c: KeyContext): Keys {
     if (cmd.kind === 'bye') return h.hangUp();
     if (cmd.kind === 'back') return h.back();
     if (cmd.kind === 'go') return c.dispatch({ type: 'GO', alias: cmd.alias });
+    // resolveInput lets a word through only where it means something: paging on the Board,
+    // answering on NO CARRIER (Req 5.3, 5.4, 7.5, 7.6).
+    if (cmd.kind === 'word' && view === 'board') return h.page(cmd.word === 'n' ? 'next' : 'prev');
     if (cmd.kind === 'word') return h.answer(cmd.word === 'y' || cmd.word === 'yes');
   }
 
@@ -56,7 +60,7 @@ export function createKeys(c: KeyContext): Keys {
     const v = viewOf(state);
     if (v === 'session') h.hangUp();
     else if (v === 'confirm' && !state.pending) h.back();
-    else if (v === 'purpose' || v === 'memo') h.back();
+    else if (v === 'purpose' || v === 'memo' || v === 'board') h.back();
   }
 
   return { submit, escape };

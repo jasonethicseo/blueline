@@ -19,6 +19,8 @@ export interface Handlers {
   noCarrierDone(): void;
   /** Y or N on the NO_CARRIER_Screen (Req 5.3, 5.4). */
   answer(yes: boolean): void;
+  /** N (older) or P (newer) on the Board_Screen (Req 7.5, 7.6). */
+  page(dir: 'next' | 'prev'): void;
 }
 
 /** Values the shell computes from `now` before each render. */
