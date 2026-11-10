@@ -19,8 +19,8 @@ This spec is also where the checks left open by the earlier specs are done, on t
 | core 1.4 (`ATDT` text typed one character at a time) | The Dial_Screen streams a Modem_Log of several lines, one line at a time, in time with the handshake sound. The `ATDT` line keeps a 7 to 11 digit number. | Requirement 4 |
 | core 1.10 (one Korean greeting) | The greeting is `반갑습니다 ^^` with `WELCOME BACK` on the same line. | Requirement 4 |
 | core 6.1, 6.10 (Session_Screen contents and hang-up text) | The Session_Screen layout follows the mockup; the hang-up text is the `ESC · HANG UP` button with `OR TYPE BYE`. | Requirement 7 |
-| core 15.2 (CRT flicker and scanlines) | The global scanlines and flicker are removed. Only the Haunted_Screen has a scanline layer, and it is static under `prefers-reduced-motion: reduce`. | Requirements 1, 9 |
-| core 13.1, purpose-board 12.1 (demo time) | The demo flow may pass through the Haunted_Screen; the 150-second bound still holds when the user returns before Time_Up. | Requirement 12 |
+| core 15.2 (CRT flicker and scanlines) | Every screen keeps a very faint, static scanline layer. The strong scanlines and the flicker are only on the Haunted_Screen, and the flicker is off under `prefers-reduced-motion: reduce`. | Requirements 1, 9 |
+| core 13.1, purpose-board 12.1 (demo time) | The 150-second demo bound also holds for a demo that passes through the Haunted_Screen. | Requirement 12 |
 | purpose-board 5.1 (NO_CARRIER_Screen contents) | The NO_CARRIER_Screen also shows a header line, a Receipt_Preview, and the Post_Number line. | Requirement 8 |
 
 ## Glossary
@@ -31,7 +31,7 @@ Terms from the core spec and the purpose-board spec keep their meaning.
 - **Screen_Frame**: The three parts every screen has, top to bottom: the Status_Bar, the content area, and the Function_Key_Bar.
 - **Status_Bar**: The top bar of a screen, black bold text on bar-cyan, showing the app name and version, the screen's context, the fee rate, and the line status.
 - **Function_Key_Bar**: The bottom bar of a screen, on black, listing the keys the screen accepts, each as the key name in yellow and its label in white.
-- **Display_Face**: The large pixel type used for `BLUELINE`, `NO CARRIER`, `THE LINE IS HAUNTED`, and the big Session_Screen numbers.
+- **Display_Face**: GalmuriMono11 shown at a large size for `BLUELINE`, `NO CARRIER`, `THE LINE IS HAUNTED`, and the big Session_Screen numbers. Sizes are multiples of 11 CSS pixels where possible (for example 44, 55, 66, 88, 110 px), so the 11-pixel pixel grid of the font stays sharp.
 - **Key_Button**: A real `<button>` labeled with its key, for example `ESC · HANG UP`, at least 48 CSS pixels tall, with square corners.
 - **Modem_Log**: The lines the Dial_Screen streams while dialing: `ATZ`, `OK`, `ATDT <number>`, `DIALING...`, `RING... RING...`, `CONNECT 2400`.
 - **Caller_Number**: The number in `WELCOME BACK, CALLER #0017`. See Requirement 4.
@@ -42,9 +42,11 @@ Terms from the core spec and the purpose-board spec keep their meaning.
 - **Receipt_Preview**: The column on the NO_CARRIER_Screen with today's and this week's calls, fees, and Outcome counts.
 - **Drop_Time**: The moment the line dropped. For a Time_Up, the scheduled end time.
 - **Drift_Time**: The time from the Drop_Time to now, while the user has not come back to the BLUELINE tab.
-- **Grace_Period**: The Drift_Time after which a returning user sees the Haunted_Screen. See Requirement 9.
+- **Grace_Period**: The Drift_Time after which a returning user sees the Haunted_Screen: 60 seconds, or 10 seconds for a Session with the 1 MIN (DEMO) Planned_Duration. See Requirement 9.
+- **Haunt_Full_Time**: The Drift_Time at which the Haunt_Level reaches 1: 600 seconds (10 minutes), or 60 seconds for a Session with the 1 MIN (DEMO) Planned_Duration.
 - **Haunted_Screen**: The screen `THE LINE IS HAUNTED`, shown before the NO_CARRIER_Screen when the Drift_Time is at least the Grace_Period. See Requirement 9.
-- **Haunt_Level**: A number from 0 to 1 that sets how strong the Haunted_Screen ghosts are. See Requirement 9.
+- **Haunt_Level**: A number from 0 to 1 that sets how strong the Haunted_Screen ghosts are: `min(1, Drift_Time / Haunt_Full_Time)`. See Requirement 9.
+- **Scanline_Layer**: A static, non-interactive overlay of thin horizontal lines over the whole screen. The faint Scanline_Layer is on every screen; the strong one is on the Haunted_Screen only.
 - **Narrow viewport**: A viewport less than 600 CSS pixels wide, as in the purpose-board spec.
 
 ## Requirements
@@ -56,12 +58,12 @@ Terms from the core spec and the purpose-board spec keep their meaning.
 #### Acceptance Criteria
 
 1. THE BLUELINE SHALL draw every background, text, border, and button color from the Palette, with no other colors, except that the Haunted_Screen ghost layers MAY use the Palette colors at reduced opacity.
-2. THE BLUELINE SHALL use no gradients, no rounded corners, and no shadows, except the Haunted_Screen scanline layer and its red / cyan text offset (Requirement 9).
-3. THE BLUELINE SHALL set all body text in the Bundled_Font (GalmuriMono11) and every Display_Face heading and number in the Display_Face, both served from the BLUELINE origin. IF a separate Display_Face font file is bundled, THEN its license SHALL be SIL OFL and its license file SHALL be in the same folder as the font file.
+2. THE BLUELINE SHALL use no gradients, no rounded corners, and no shadows, except the Scanline_Layers and the Haunted_Screen red / cyan text offset (Requirement 9).
+3. THE BLUELINE SHALL set all text, body and Display_Face alike, in the Bundled_Font (GalmuriMono11) served from the BLUELINE origin, and SHALL NOT add a second font file. Display_Face sizes SHALL be multiples of 11 CSS pixels wherever the layout allows.
 4. THE BLUELINE SHALL make no request to any other origin for fonts or any other asset; the mockups' Google Fonts links SHALL NOT be copied into the app.
 5. THE BLUELINE SHALL show all text that BLUELINE generates in ALL-CAPS English, except Korean flavor lines (the greeting, the Purpose_Screen hint, the Sysop_Notice, the function-key hints), each of which SHALL have its English meaning on the same screen.
-6. THE BLUELINE SHALL remove the global scanline overlay and the flicker animation of the core spec.
-7. EVERY text and background pair that BLUELINE shows SHALL have a contrast ratio of at least 4.5:1, except decorative Haunted_Screen ghost text marked `aria-hidden="true"`.
+6. EVERY screen SHALL show the faint Scanline_Layer. It SHALL NOT move or flicker, SHALL NOT receive pointer input, and SHALL be `aria-hidden="true"`. THE BLUELINE SHALL show no flicker animation outside the Haunted_Screen.
+7. EVERY text and background pair that BLUELINE shows SHALL have a contrast ratio of at least 4.5:1, measured with the Scanline_Layer over both, except decorative Haunted_Screen ghost text marked `aria-hidden="true"`.
 
 ### Requirement 2: Screen Frame, Boxes, and Buttons
 
@@ -83,7 +85,7 @@ Terms from the core spec and the purpose-board spec keep their meaning.
 #### Acceptance Criteria
 
 1. THE BLUELINE SHALL render every screen with no horizontal scrolling on viewports from 360 to 1920 CSS pixels wide, including a 60-Character Hangul Purpose and a 120-Character Hangul Message.
-2. THE BLUELINE SHALL size Display_Face text between 72 and 120 CSS pixels on viewports 960 CSS pixels and wider, and SHALL scale it down on smaller viewports so that the longest Display_Face line on each screen fits the width.
+2. THE BLUELINE SHALL size Display_Face text between 77 and 110 CSS pixels (multiples of 11) on viewports 960 CSS pixels and wider, and SHALL step it down on smaller viewports, preferring multiples of 11, so that the longest Display_Face line on each screen fits the width.
 3. ON a Narrow viewport, THE BLUELINE SHALL stack two-column layouts (the Dial_Screen, the NO_CARRIER_Screen) into one column, with the main column first.
 4. ON a Narrow viewport, THE Status_Bar and the Function_Key_Bar SHALL wrap onto more lines instead of cutting text off.
 
@@ -156,16 +158,17 @@ Terms from the core spec and the purpose-board spec keep their meaning.
 
 #### Acceptance Criteria
 
-1. WHEN a Session ends by Time_Up and the user first sees the BLUELINE tab after the Drop_Time (the tab becomes visible, the tab resumes, or the tab is reloaded) with a Drift_Time of at least the Grace_Period of 60 seconds, THE BLUELINE SHALL show the Haunted_Screen before the NO_CARRIER_Screen.
+1. WHEN a Session ends by Time_Up and the user first sees the BLUELINE tab after the Drop_Time (the tab becomes visible, the tab resumes, or the tab is reloaded) with a Drift_Time of at least the Grace_Period (60 seconds, or 10 seconds for the 1 MIN (DEMO) Planned_Duration), THE BLUELINE SHALL show the Haunted_Screen before the NO_CARRIER_Screen.
 2. THE BLUELINE SHALL NOT show the Haunted_Screen for a Hang_Up, for a Time_Up seen within the Grace_Period, or for a Session with no Purpose.
 3. THE Haunted_Screen SHALL use the bg-haunted background, a dark red Status_Bar with `LINE STATUS: UNSTABLE`, the title `THE LINE IS HAUNTED` in red Display_Face with a cyan offset, the lines `YOUR LINE DROPPED <MM:SS> AGO.` and `YOU NEVER CAME BACK.`, a red box with `YOU SAID, <MM:SS> AGO` and the Purpose in quotes, the line `BILLED ₩<fee> (<MM:SS> BOOKED) · DRIFT +<MM:SS> NOT BILLED, BUT REMEMBERED`, and the Key_Button `ENTER · FACE IT`.
 4. WHILE the Haunted_Screen is shown, THE BLUELINE SHALL update the Drift_Time once per second from the Drop_Time and the current time, with no use of a count of timer ticks.
 5. THE Haunted_Screen SHALL show ghost copies of the Purpose as plain text, 4 to 6 of them at full strength, positioned across the screen, slightly rotated and letter-spaced, partly corrupted with `▒` and `█` characters, with a red / cyan offset, plus one small ASCII ghost. All ghost layers SHALL be `aria-hidden="true"` and SHALL NOT receive pointer input.
-6. THE Haunt_Level SHALL be `min(1, Drift_Time / 600 seconds)`: 0 at the Drop_Time and 1 at 10 minutes or more, never below 0, and never decreasing while the Drift_Time grows (property). Ghost opacity and the number of ghosts shown SHALL grow with the Haunt_Level.
-7. WHERE the user prefers reduced motion, THE Haunted_Screen ghosts and scanline layer SHALL be static, with no flicker or movement.
-8. WHEN the user presses Enter (or taps `ENTER · FACE IT`), THE BLUELINE SHALL show the NO_CARRIER_Screen of Requirement 8, with the Message if the Session has one.
-9. THE Haunted_Screen SHALL NOT change the fee, the Session_Record, or the Outcome, SHALL NOT show the Message, and SHALL appear at most once per Session. A reload while the Haunted_Screen is shown SHALL follow purpose-board Requirement 9 criterion 6 (Dial_Screen, NO ANSWER kept).
-10. THE fee shown on the Haunted_Screen SHALL equal the fee of the Session_Record, which is computed from the Planned_Duration (core Requirement 7 criterion 6).
+6. THE Haunt_Level SHALL be `min(1, Drift_Time / Haunt_Full_Time)`, with a Haunt_Full_Time of 600 seconds, or 60 seconds for the 1 MIN (DEMO) Planned_Duration. FOR ALL Drift_Times and Planned_Durations, THE Haunt_Level SHALL be between 0 and 1, SHALL be 0 at the Drop_Time and 1 at the Haunt_Full_Time or later, and SHALL NOT decrease when the Drift_Time grows (property). Ghost opacity and the number of ghosts shown SHALL grow with the Haunt_Level.
+7. THE Grace_Period and the Haunt_Full_Time for both cases SHALL be defined in one place in the code (`src/core/config.ts`).
+8. THE Haunted_Screen SHALL show the strong Scanline_Layer and a flicker on the title and the ghosts. WHERE the user prefers reduced motion, THE flicker SHALL be off and the ghosts SHALL not move; the strong Scanline_Layer stays, static.
+9. WHEN the user presses Enter (or taps `ENTER · FACE IT`), THE BLUELINE SHALL show the NO_CARRIER_Screen of Requirement 8, with the Message if the Session has one.
+10. THE Haunted_Screen SHALL NOT change the fee, the Session_Record, or the Outcome, SHALL NOT show the Message, and SHALL appear at most once per Session. A reload while the Haunted_Screen is shown SHALL follow purpose-board Requirement 9 criterion 6 (Dial_Screen, NO ANSWER kept).
+11. THE fee shown on the Haunted_Screen SHALL equal the fee of the Session_Record, which is computed from the Planned_Duration (core Requirement 7 criterion 6).
 
 ### Requirement 10: Screens without a Mockup
 
@@ -198,7 +201,8 @@ Terms from the core spec and the purpose-board spec keep their meaning.
 2. EVERY existing property test and unit test SHALL still pass, changed only where a test checks text that this spec changes.
 3. THE stored history and active-session formats SHALL NOT change.
 4. THE demo flow of purpose-board Requirement 12 (returning before Time_Up) SHALL still finish in less than 150 seconds, and SHALL NOT pass through the Haunted_Screen.
-5. THE production bundle SHALL make no request to another origin (core Requirement 10 criterion 2), checked with the production CSP.
+5. WHEN a user runs the same demo flow but stays in the Destination tab past Time_Up, returns to the BLUELINE tab between 10 and 30 seconds after Time_Up, presses Enter on the Haunted_Screen within 5 seconds, and presses Y or N on the NO_CARRIER_Screen within 5 seconds, THE BLUELINE SHALL display the Receipt_Screen less than 150 seconds after the user first pressed Enter on the Dial_Screen.
+6. THE production bundle SHALL make no request to another origin (core Requirement 10 criterion 2), checked with the production CSP.
 
 ### Requirement 13: Open Device Checks and README
 
@@ -210,19 +214,19 @@ Terms from the core spec and the purpose-board spec keep their meaning.
 2. THE Haunted_Screen SHALL be checked on a desktop browser (stay in the destination tab past the Grace_Period) and on iPhone Safari (stay in the destination app, then return).
 3. THE README SHALL be written in this spec, covering the core flow, the purpose-board features, the Haunted_Screen, the demo path, privacy, known limitations, development, Kiro usage, and credits and licenses, as planned in the core design.
 
-## Assumptions to confirm before design
+## Confirmed decisions
 
-Each one is written into the criteria above and can be changed.
+Confirmed before design. Each one is written into the criteria above.
 
 1. **CSS boxes replace text boxes.** The core spec's "box drawn only with text characters" becomes CSS `4px double` / `1px dashed` borders, as `design.md` says. (Req 2.4)
-2. **Display face.** Scale up GalmuriMono11 for the big titles and numbers instead of bundling a second font such as VT323, so no new license file is needed and Hangul works in the same face. (Req 1.3)
+2. **Display face.** GalmuriMono11 scaled up for the big titles and numbers; no second font file. Sizes are multiples of 11 px where the layout allows (for example 88 px, 110 px). (Req 1.3, 3.2)
 3. **Version in the Status_Bar.** Show the real `package.json` version (`BLUELINE 0.1.0`), not the mockups' fictional `BLUELINE 2.4`. (Req 2.2)
 4. **Dial number.** Keep the current fictional 10-digit `ATDT 0145550199` instead of the mockup's 5-digit `ATDT 01410`, so the core 7-to-11-digit rule still holds. (Req 4.2)
 5. **Caller_Number.** The Caller_Number is the next Post_Number (the largest stored Post_Number + 1), so it matches the post this call will become. (Req 4.4)
 6. **No `GO BOARD` on the Dial_Screen.** The Main mockup's footer shows `GO BOARD`, but the Board stays at `4. BOARD` on the Destination_Menu; the Dial_Screen footer lists only `ENTER DIAL` and `HELP`. (Req 2.3)
-7. **Haunted_Screen trigger and Grace_Period.** Time_Up only, 60 seconds, Sessions with a Purpose only, at most once per Session; nothing new is stored (the drift is shown, not saved). (Req 9.1, 9.2, 9.9)
-8. **Haunt_Level.** Linear from 0 at the Drop_Time to 1 at 10 minutes. (Req 9.6)
-9. **Global CRT effects removed.** No scanlines or flicker outside the Haunted_Screen, following `design.md`'s "no gradients". (Req 1.6)
+7. **Haunted_Screen trigger and Grace_Period.** Time_Up only, Sessions with a Purpose only, at most once per Session; nothing new is stored (the drift is shown, not saved). The Grace_Period is 60 seconds, or 10 seconds for the 1 MIN (DEMO) Planned_Duration. (Req 9.1, 9.2, 9.10)
+8. **Haunt_Level.** Linear from 0 at the Drop_Time to 1 at the Haunt_Full_Time: 10 minutes, or 1 minute for the 1 MIN (DEMO) Planned_Duration. Both demo values and both normal values live in `src/core/config.ts`. (Req 9.6, 9.7)
+9. **Scanlines.** A very faint, static Scanline_Layer stays on every screen, with text contrast of at least 4.5:1 under it. The strong Scanline_Layer and the flicker are on the Haunted_Screen only; the flicker is off under `prefers-reduced-motion: reduce`. (Req 1.6, 1.7, 9.8)
 10. **Sysop_Notice period.** The last 7 local calendar days including today, not This_Week. (Req 5.4)
 11. **`SENT <MM:SS> AGO`.** Measured from the Session start to the first NO CARRIER view; the Receipt_Preview counts the ended Session as NO ANSWER until the answer. (Req 8.2, 8.3)
 12. **This is the last spec.** The README task moved from the earlier specs is done here, after the device checks. (Req 13.3)
