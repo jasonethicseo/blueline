@@ -1,0 +1,119 @@
+/* Screen parts: ASCII boxes, the NO CARRIER Message and answers, and the Board.
+   Split out of crt.css to keep each file under about 200 lines. Loaded after crt.css.
+   Class names used by src/screens/*: .box, .box-row, .box-side, .box-edge, .box-cell,
+   .box-indent, .counts, .choices, .memo, .board, .board-row, .board-head, .board-no,
+   .board-date, .board-time, .board-mark, .mark-long, .mark-short, .board-purpose */
+
+/* ASCII box: top/bottom edges are "+----+" text; sides are columns of "|" characters. */
+.box {
+  width: min(calc(var(--box-cols) * 1ch), 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.box-edge {
+  margin: 0;
+  white-space: pre;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.box-row {
+  display: flex;
+  align-items: stretch;
+}
+
+/* Size containment: the column of "|" adds no height of its own; the row's content sets
+   the height and the side stretches to it, clipping the extra bars. */
+.box-side {
+  flex: none;
+  width: 1ch;
+  white-space: pre;
+  overflow: hidden;
+  line-height: 1;
+  contain: size;
+}
+
+/* pre-wrap keeps the padded label columns ("SESSION FEE  ₩40") and still wraps long text. */
+.box-cell {
+  flex: 1;
+  min-width: 0;
+  padding: 0 1ch;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Wrapped text under a label row: the Purpose and the Outcome counts (purpose-board Req 6). */
+.box-indent {
+  display: block;
+  padding-left: 2ch;
+}
+
+/* An Outcome_Count_Line wraps only after a "·": its other spaces are no-break spaces,
+   and each piece (at most 15 characters) always fits the 26-column indent (Req 6.2). */
+.box-indent.counts {
+  overflow-wrap: normal;
+}
+
+/* The Y / N answers on the NO_CARRIER_Screen and the Board keys (Req 5.1, 5.10, 7.12). */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1ch;
+}
+
+/* The Message on the NO_CARRIER_Screen (Req 4.1). */
+.memo {
+  margin: 0.5rem 0;
+  padding: 0.25rem 1ch;
+  border: 1px dashed var(--em);
+}
+
+/* Board_Screen (Req 7.3, 7.10). 600 px and wider: one line per post with the Outcome word.
+   Narrower (a Narrow viewport, NARROW_MAX_PX in config.ts): the Purpose moves to a second
+   line and the Outcome shows as Y / N / ?. The hidden copy uses display: none, so screen
+   readers read one of them. */
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: 5ch 10ch 5ch 9ch minmax(0, 1fr);
+  column-gap: 1ch;
+  align-items: start;
+}
+
+.board-head {
+  color: var(--dim);
+}
+
+.board-purpose {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mark-short {
+  display: none;
+}
+
+@media (max-width: 599px) {
+  .board-row {
+    grid-template-columns: 5ch 10ch 5ch 3ch;
+  }
+
+  .board-purpose {
+    grid-column: 1 / -1;
+    padding-left: 2ch;
+  }
+
+  .mark-long {
+    display: none;
+  }
+
+  .mark-short {
+    display: inline;
+  }
+}

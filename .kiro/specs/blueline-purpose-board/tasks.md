@@ -175,10 +175,11 @@ Conventions for every task:
     - Empty history → `PAGE 1/1` and `NO POSTS`. 21 records → 2 pages. `NO MORE PAGES` at both ends. Digits 1–9 → `INVALID SELECTION`. `reset` and `unavailable` notices. Opening and paging return no effects other than `loadBoard`. `n` on the Destination_Menu → `COMMAND NOT AVAILABLE HERE - TYPE HELP`.
     - _Requirements: 7.5, 7.6, 7.8, 7.9, 7.11, 7.13_
 
-- [ ] 7. Checkpoint
+- [x] 7. Checkpoint
   - Run `npm test` (both time-zone projects) and `npm run build`. Both must pass with no type errors.
   - Check that every file in `src/` is under about 200 lines and that `src/core` imports nothing from `app`, `screens`, `audio`, or `platform` and has no `Date.now()`, timers, or DOM access.
   - Update `.kiro/steering/structure.md` with the new files (`core/purpose.ts`, `session-state.ts`, `session-intent.ts`, `session-ended.ts`, `board.ts`, `outcomes.ts` if created, `app/keys.ts`, `screens/purpose.ts`, `board.ts`) and the new state list.
+  - Done: `src/styles/crt.css` was 321 lines (238 before this spec), so the box, NO CARRIER, and Board styles moved to the new `src/styles/screens.css`; `outcomes.ts` was not needed.
   - Ask the user if questions come up before the manual checks.
   - _Requirements: 10.1, 12.2_
 
