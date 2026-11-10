@@ -8,24 +8,29 @@
     <meta name="description" content="A 1990s dial-up connection gate for endless feeds. Fees are fictional." />
     <title>BLUELINE</title>
   </head>
-  <body>
-    <main id="app">
-      <div id="screen" class="screen"></div>
-      <p id="message" role="status" aria-live="polite"></p>
-      <form id="prompt-form" autocomplete="off">
-        <label for="prompt"><span aria-hidden="true">&gt;</span><span class="sr-only">COMMAND</span></label>
-        <input
-          id="prompt"
-          name="prompt"
-          type="text"
-          maxlength="32"
-          autocapitalize="off"
-          autocorrect="off"
-          spellcheck="false"
-          enterkeyhint="go"
-        />
-      </form>
-    </main>
+  <body data-theme="blue">
+    <div id="frame">
+      <header id="status-bar"></header>
+      <main id="app">
+        <div id="screen" class="screen"></div>
+        <p id="message" role="status" aria-live="polite"></p>
+        <form id="prompt-form" autocomplete="off">
+          <label for="prompt"><span aria-hidden="true">&gt;</span><span class="sr-only">COMMAND</span></label>
+          <input
+            id="prompt"
+            name="prompt"
+            type="text"
+            maxlength="32"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+            enterkeyhint="go"
+          />
+        </form>
+      </main>
+      <footer id="key-bar"></footer>
+    </div>
+    <div id="scanlines" aria-hidden="true"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

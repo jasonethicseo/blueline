@@ -1,9 +1,12 @@
 // App entry: boot, page layout, screen router.
 import './styles/crt.css';
+import './styles/frame.css';
 import './styles/screens.css';
 import { viewOf } from './core/commands';
 import { createController, type Controller } from './app/controller';
 import { attachInput, usedPointer } from './app/input';
+import { frameFor } from './screens/frame';
+import { drawFrame } from './screens/frame-dom';
 import * as dial from './screens/dial';
 import * as menu from './screens/menu';
 import * as purpose from './screens/purpose';
@@ -16,6 +19,8 @@ import * as receipt from './screens/receipt';
 
 const screen = document.getElementById('screen') as HTMLElement;
 const message = document.getElementById('message') as HTMLElement;
+const statusBar = document.getElementById('status-bar') as HTMLElement;
+const keyBar = document.getElementById('key-bar') as HTMLElement;
 const prompt = document.getElementById('prompt') as HTMLInputElement;
 const form = document.getElementById('prompt-form') as HTMLFormElement;
 
@@ -43,6 +48,8 @@ function route(c: Controller): void {
 
 function render(c: Controller): void {
   route(c);
+  // The held 00:00 frame still belongs to the Session_Screen (Req 7.1).
+  drawFrame(statusBar, keyBar, frameFor(c.finalFrame() ? 'session' : viewOf(c.state()), c.state()));
   const text = c.state().message ?? '';
   if (message.textContent !== text) message.textContent = text;
 

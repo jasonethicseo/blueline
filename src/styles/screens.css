@@ -1,52 +1,78 @@
-/* Screen parts: ASCII boxes, the NO CARRIER Message and answers, and the Board.
+/* Screen parts: CSS boxes, two-column layouts, the NO CARRIER Message and answers, and the Board.
    Split out of crt.css to keep each file under about 200 lines. Loaded after crt.css.
-   Class names used by src/screens/*: .box, .box-row, .box-side, .box-edge, .box-cell,
-   .box-indent, .counts, .choices, .memo, .board, .board-row, .board-head, .board-no,
+   Class names used by src/screens/*: .box, .box-double, .box-dashed, .box-row, .box-indent,
+   .cols, .col-main, .col-side, .counts, .choices, .memo, .board, .board-row, .board-head, .board-no,
    .board-date, .board-time, .board-mark, .mark-long, .mark-short, .board-purpose */
 
-/* ASCII box: top/bottom edges are "+----+" text; sides are columns of "|" characters. */
+/* A box drawn by CSS borders (design Req 2.4), never by + - | characters. */
 .box {
-  width: min(calc(var(--box-cols) * 1ch), 100%);
+  width: fit-content;
+  min-width: min(32ch, 100%);
+  max-width: 100%;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
-.box-edge {
-  margin: 0;
-  white-space: pre;
-  overflow: hidden;
-  line-height: 1;
+.box-double {
+  border: 4px double var(--text);
 }
 
-.box-row {
-  display: flex;
-  align-items: stretch;
-}
-
-/* Size containment: the column of "|" adds no height of its own; the row's content sets
-   the height and the side stretches to it, clipping the extra bars. */
-.box-side {
-  flex: none;
-  width: 1ch;
-  white-space: pre;
-  overflow: hidden;
-  line-height: 1;
-  contain: size;
+.box-dashed {
+  border: 1px dashed var(--text-dim);
 }
 
 /* pre-wrap keeps the padded label columns ("SESSION FEE  ₩40") and still wraps long text. */
-.box-cell {
-  flex: 1;
+.box-row {
   min-width: 0;
-  padding: 0 1ch;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* Two columns, the main one first; one column below 600 px (Req 3.3). */
+.cols {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.col-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.col-side {
+  flex: none;
+  width: min(300px, 40%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 599px) {
+  .cols {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .col-side {
+    width: 100%;
+  }
 }
 
 /* Wrapped text under a label row: the Purpose and the Outcome counts (purpose-board Req 6). */
 .box-indent {
   display: block;
   padding-left: 2ch;
+}
+
+/* Menu rows inside a box are full-width buttons. */
+.box-row > .item {
+  width: 100%;
 }
 
 /* An Outcome_Count_Line wraps only after a "·": its other spaces are no-break spaces,
@@ -66,7 +92,7 @@
 .memo {
   margin: 0.5rem 0;
   padding: 0.25rem 1ch;
-  border: 1px dashed var(--em);
+  border: 4px double var(--yellow);
 }
 
 /* Board_Screen (Req 7.3, 7.10). 600 px and wider: one line per post with the Outcome word.
@@ -87,7 +113,7 @@
 }
 
 .board-head {
-  color: var(--dim);
+  color: var(--text-dim);
 }
 
 .board-purpose {

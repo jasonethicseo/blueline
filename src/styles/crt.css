@@ -1,8 +1,9 @@
-/* BLUELINE: 1990s PC-tongsin blue screen. Page frame, text, buttons, inputs, and CRT effects.
-   Boxes, the NO CARRIER Message, and the Board are in screens.css.
+/* BLUELINE: a 1990s PC-tongsin terminal. Palette, page frame (Status_Bar, content, Function_Key_Bar),
+   text, Key_Buttons, inputs, and the faint Scanline_Layer. Only the DOS / CGA colors of design.md.
+   Boxes, two-column layouts, the NO CARRIER Message, and the Board are in screens.css.
    Class names used by src/screens/*:
-   .screen, .line, .title, .dim, .em, .item (menu button), .action (CONNECT / HANG UP button),
-   .url-input, .text-field, .meter, .notice */
+   .screen, .line, .title, .dim, .em, .item (menu row), .action (Key_Button), .url-input, .text-field,
+   .meter, .notice, .display-xl / .display-l / .display-m (Display_Face) */
 
 @font-face {
   font-family: 'GalmuriMono11';
@@ -11,15 +12,42 @@
 }
 
 :root {
-  --bg: #0000aa;
-  --fg: #e8e8e8;
-  --dim: #9fa8ff;
-  --em: #ffff55;
-  --bar-bg: #aaaaaa;
-  --bar-fg: #0000aa;
+  /* Palette (design.md). */
+  --bg-blue: #0000aa;
+  --bg-black: #000000;
+  --bg-haunted: #00004a;
+  --text: #ffffff;
+  --text-dim: #aaaaaa;
+  --yellow: #ffff55;
+  --cyan: #55ffff;
+  --bar-cyan: #00aaaa;
+  --green: #55ff55;
+  --red: #ff5555;
+  --hangup-red: #aa0000;
+  --ghost: #aaaaff;
+
+  --bg: var(--bg-blue);
+  --bar-bg: var(--bar-cyan);
+  --bar-fg: #000000;
+  /* How dark the global Scanline_Layer is: very faint, on every screen over text and background. */
+  --scan: 0.06;
+  --pad-x: 32px;
+  --pad-y: 28px;
   --font: 'GalmuriMono11', ui-monospace, monospace;
-  --box-cols: 32;
   color-scheme: dark;
+}
+
+body[data-theme='black'] {
+  --bg: var(--bg-black);
+}
+
+body[data-theme='haunted'] {
+  --bg: var(--bg-haunted);
+  --bar-bg: var(--hangup-red);
+  --bar-fg: var(--text);
+  /* The strong lines of the Haunted_Screen sit behind its text (haunted.css), not over it,
+     so text keeps 4.5:1 (Req 1.7). */
+  --scan-strong: 0.28;
 }
 
 * {
@@ -34,30 +62,18 @@ body {
 }
 
 body {
-  color: var(--fg);
+  color: var(--text);
   font-family: var(--font);
-  font-size: clamp(14px, 4vw, 22px);
+  font-size: 16px;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
-#app {
-  max-width: 44rem;
-  min-height: 100vh;
-  min-height: 100dvh;
-  margin: 0 auto;
-  padding: 1rem 0.75rem 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  text-shadow: 0 0 0.25em rgb(200 210 255 / 0.35);
-}
-
 .screen {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 4px;
 }
 
 .line {
@@ -68,15 +84,15 @@ body {
 }
 
 .title {
-  color: var(--em);
+  color: var(--yellow);
 }
 
 .dim {
-  color: var(--dim);
+  color: var(--text-dim);
 }
 
 .em {
-  color: var(--em);
+  color: var(--yellow);
 }
 
 button {
@@ -84,14 +100,15 @@ button {
   color: inherit;
   background: transparent;
   border: 0;
+  border-radius: 0;
   margin: 0;
   cursor: pointer;
-  text-shadow: inherit;
 }
 
+/* Key_Button: a real button, square, at least 48 px tall (Req 2.5). */
 .item,
 .action {
-  min-height: 44px;
+  min-height: 48px;
   min-width: 44px;
   padding: 0 1ch;
   text-align: left;
@@ -105,24 +122,24 @@ button {
 .action {
   align-self: flex-start;
   border: 1px solid currentColor;
+  font-weight: 700;
 }
 
 .item:hover,
 .item:focus-visible,
 .action:hover,
 .action:focus-visible {
-  background: var(--bar-bg);
-  color: var(--bar-fg);
-  text-shadow: none;
+  background: var(--text-dim);
+  color: var(--bg-black);
 }
 
 :focus-visible {
-  outline: 2px solid var(--em);
+  outline: 2px solid var(--yellow);
   outline-offset: 2px;
 }
 
 a {
-  color: var(--em);
+  color: var(--cyan);
 }
 
 .meter {
@@ -130,14 +147,14 @@ a {
 }
 
 .notice {
-  color: var(--em);
+  color: var(--yellow);
 }
 
 #message {
   min-height: 1.5em;
   margin: 0;
   white-space: pre-wrap;
-  color: var(--em);
+  color: var(--yellow);
 }
 
 #prompt-form {
@@ -152,20 +169,21 @@ a {
   display: none;
 }
 
+/* Inputs sit on black (design.md). */
 #prompt,
 .url-input,
 .text-field {
   flex: 1;
   min-width: 0;
-  min-height: 44px;
+  min-height: 48px;
+  padding: 0 1ch;
   /* iOS Safari zooms into inputs smaller than 16px. */
   font: inherit;
   font-size: max(16px, 1em);
-  color: inherit;
-  caret-color: var(--em);
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--dim);
+  color: var(--text);
+  caret-color: var(--yellow);
+  background: var(--bg-black);
+  border: 1px solid var(--text-dim);
   border-radius: 0;
   outline-offset: 0;
 }
@@ -184,24 +202,12 @@ a {
   white-space: nowrap;
 }
 
-/* CRT effects only for users who have not asked for reduced motion (Req 15.2). */
-@media (prefers-reduced-motion: no-preference) {
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.18) 0 1px, transparent 1px 3px);
-  }
-
-  #app {
-    animation: flicker 4s steps(1) infinite;
-  }
-
-  @keyframes flicker {
-    0%, 100% { opacity: 1; }
-    47% { opacity: 0.96; }
-    48% { opacity: 1; }
-    83% { opacity: 0.98; }
-  }
+/* The Scanline_Layer: thin horizontal lines over the whole screen. Static, never receives input
+   (Req 1.6). */
+#scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  background: repeating-linear-gradient(to bottom, rgb(0 0 0 / var(--scan)) 0 1px, transparent 1px 3px);
 }

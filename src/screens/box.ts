@@ -1,45 +1,20 @@
-// ASCII boxes drawn only with text characters (Req 2.1, 4.1, 9.2) as real DOM text (Req 15.1).
-// Borders are aria-hidden so screen readers read only the content.
+// CSS boxes: a `4px double` or `1px dashed` border drawn by CSS, not by `+ - |` characters
+// (design Req 2.4). Rows are plain DOM, so screen readers read only the content.
 import { el } from './view';
-
-export const BOX_COLS = 32;
 
 /** A row is plain text, an element (e.g. a menu button), or several inline nodes. */
 export type Row = string | HTMLElement | Node[];
 
-function edge(cols: number): HTMLParagraphElement {
-  const p = el('p', 'box-edge', `+${'-'.repeat(cols - 2)}+`);
-  p.setAttribute('aria-hidden', 'true');
-  return p;
-}
+export type BoxStyle = 'double' | 'dashed';
 
-// A column of "|" taller than any row; CSS clips it to the row height. 12 lines covers a
-// 60-Character Hangul Purpose (about 5 lines) with room to spare (purpose-board design).
-const SIDE_TEXT = Array.from({ length: 12 }, () => '|').join('\n');
-
-function side(): HTMLSpanElement {
-  const s = el('span', 'box-side', SIDE_TEXT);
-  s.setAttribute('aria-hidden', 'true');
-  return s;
-}
-
-function cell(content: Row): HTMLElement {
-  if (content instanceof HTMLButtonElement) return content;
-  const c = el('span', 'box-cell');
-  if (typeof content === 'string') c.textContent = content;
-  else if (Array.isArray(content)) c.append(...content);
-  else c.append(content);
-  return c;
-}
-
-export function box(rows: Row[], cols = BOX_COLS): HTMLDivElement {
-  const wrap = el('div', 'box');
-  wrap.append(edge(cols));
+export function box(rows: Row[], style: BoxStyle = 'double'): HTMLDivElement {
+  const wrap = el('div', `box box-${style}`);
   for (const r of rows) {
     const row = el('div', 'box-row');
-    row.append(side(), cell(r), side());
+    if (typeof r === 'string') row.textContent = r;
+    else if (Array.isArray(r)) row.append(...r);
+    else row.append(r);
     wrap.append(row);
   }
-  wrap.append(edge(cols));
   return wrap;
 }

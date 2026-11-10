@@ -6,6 +6,8 @@ import pkg from './package.json' with { type: 'json' };
 export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   test: {
+    // The contrast test reads crt.css as text; other CSS stays empty in tests.
+    css: { include: [/crt\.css/] },
     pool: 'forks',
     passWithNoTests: true,
     projects: [

@@ -69,15 +69,15 @@ Conventions for every task:
   - [x] 3.4 Update tests whose text changed (`₩` formatting) and add unit tests for SEEN timing that do not need the DOM.
     - _Requirements: 12.2_
 
-- [ ] 4. Screen frame and shared styles
-  - [ ] 4.1 Add `#status-bar` and `#key-bar` to `index.html`; create `src/screens/frame.ts` (`frameFor`, the table in the design); draw the bars and set `body[data-theme]` in `main.ts`.
+- [x] 4. Screen frame and shared styles
+  - [x] 4.1 Add `#status-bar` and `#key-bar` to `index.html`; create `src/screens/frame.ts` (`frameFor`, the table in the design); draw the bars and set `body[data-theme]` in `main.ts`.
     - _Requirements: 2.1, 2.2, 2.3, 3.4, 11.2_
-  - [ ] 4.2 Rewrite `src/styles/crt.css` and `screens.css` foundations
+  - [x] 4.2 Rewrite `src/styles/crt.css` and `screens.css` foundations
     - Palette tokens, themes, frame bars, Key_Buttons (48 px, square), inputs on black, faint static Scanline_Layer, yellow focus outline, `.display-xl` / `-l` / `-m` steps in multiples of 11 px, two-column layouts that stack below 600 px. Remove the old flicker.
     - _Requirements: 1.1, 1.2, 1.3, 1.6, 2.5, 2.6, 3.1–3.3, 11.3_
-  - [ ] 4.3 Replace the ASCII boxes in `src/screens/box.ts` with CSS boxes; restyle the menus, URL entry, Duration_Menu, Connect_Confirm_Screen, Receipt_Screen, and Board_Screen (content unchanged).
+  - [x] 4.3 Replace the ASCII boxes in `src/screens/box.ts` with CSS boxes; restyle the menus, URL entry, Duration_Menu, Connect_Confirm_Screen, Receipt_Screen, and Board_Screen (content unchanged).
     - _Requirements: 2.4, 10.1, 10.2, 10.3_
-  - [ ] 4.4 Write unit tests
+  - [x] 4.4 Write unit tests
     - `frameFor` keys and status per view, no Purpose or Message in either bar; the contrast table for every Palette pair used, with the faint and strong Scanline_Layer factors, all ≥ 4.5:1.
     - _Requirements: 1.7, 2.2, 2.3_
 
