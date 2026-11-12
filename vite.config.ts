@@ -26,8 +26,9 @@ function cspMeta(): Plugin {
 }
 
 export default defineConfig({
-  // Relative asset paths, so the build works from any sub-path (e.g. GitHub Pages /blueline/).
-  base: './',
+  // Served from GitHub Pages at https://jasonethicseo.github.io/blueline/, so every asset URL starts
+  // with the repository name. `npm run dev` and `vite preview` use the same path.
+  base: '/blueline/',
   // The real version, shown in the Status_Bar (design Req 2.2).
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [cspMeta()],
