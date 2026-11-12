@@ -13,12 +13,14 @@ The fee is in fictional ₩ (₩40 per started minute) and has no monetary value
 
 ## Try it
 
-There is no hosted copy yet. Run it locally:
+**Open it: <https://jasonethicseo.github.io/blueline/>** (works in desktop and mobile browsers).
+
+To run it locally instead:
 
 ```sh
 npm install
 npm run build
-npx vite preview        # then open http://localhost:4173/
+npx vite preview        # then open http://localhost:4173/blueline/
 ```
 
 The demo path takes about 1.5 minutes with the 1 MIN (DEMO) duration:
@@ -97,6 +99,9 @@ npm run dev     # local dev server
 npm run build   # type check and production build into dist/
 npm test        # all unit and property tests, once
 ```
+
+Every push to `main` runs the tests, the type check, and the build in GitHub Actions
+(`.github/workflows/deploy.yml`), and deploys `dist/` to GitHub Pages only if all three pass.
 
 TypeScript and Vite, no UI framework. Tests use Vitest and fast-check; the history and summary
 properties also run in a second time zone with daylight saving (`America/New_York`).
