@@ -130,7 +130,8 @@ docs/
 - **Hooks** (`.kiro/hooks/`, with `.kiro/scripts/worktrail_bridge.py`): at session start, on each prompt,
   after each commit, and around context compaction, they keep a running record of decisions and
   progress in Worktrail, so a new session picks up the work where the last one stopped. Without
-  Worktrail installed they print nothing and do not block anything.
+  Worktrail installed they print nothing and do not block anything. They look for the Worktrail
+  client in `~/.casebook/client`; set `CASEBOOK_CLIENT` to use another location.
 
 ## Credits and licenses
 

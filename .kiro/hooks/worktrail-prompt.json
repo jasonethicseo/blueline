@@ -7,7 +7,7 @@
       "description": "Saves the engineer's prompt verbatim to Worktrail and gives the agent its source_ref.",
       "action": {
         "type": "command",
-        "command": "\"$HOME/.casebook/client/.venv/bin/python\" .kiro/scripts/worktrail_bridge.py prompt 2>/dev/null || true",
+        "command": "\"${CASEBOOK_CLIENT:-$HOME/.casebook/client}/.venv/bin/python\" .kiro/scripts/worktrail_bridge.py prompt 2>/dev/null || true",
         "timeout": 10
       }
     }
